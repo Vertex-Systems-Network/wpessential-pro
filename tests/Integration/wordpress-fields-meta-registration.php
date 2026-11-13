@@ -44,6 +44,8 @@ require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 require_once ABSPATH . 'wp-admin/includes/user.php';
 
 $root = dirname(__DIR__, 2);
+
+require_once __DIR__ . '/free-root.php';
 spl_autoload_register(static function (string $class) use ($root): void {
     $prefix = 'WPEssential\\';
     if (!str_starts_with($class, $prefix)) {

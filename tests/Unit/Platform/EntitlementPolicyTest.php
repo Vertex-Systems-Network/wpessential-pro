@@ -116,7 +116,8 @@ final class EntitlementPolicyTest extends TestCase
     {
         $root = dirname(__DIR__, 3);
         $bootstrap = file_get_contents($root . '/wpessential-pro.php');
-        $provider = file_get_contents($root . '/frameworks/Platform/Entitlements/LocalProductEntitlementProvider.php');
+        // Free platform code: resolve it wherever the Free package is installed.
+        $provider = file_get_contents((string) (new \ReflectionClass(\WPEssential\Platform\Entitlements\LocalProductEntitlementProvider::class))->getFileName());
 
         self::assertIsString($bootstrap);
         self::assertIsString($provider);

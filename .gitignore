@@ -1,0 +1,6 @@
+/assets/admin/
+/artifacts/
+/vendor/
+/var/
+/node_modules/
+/composer.lock

@@ -1,0 +1,328 @@
+import { createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import {
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+import { build as esbuildBuild } from 'esbuild';
+import * as sass from 'sass';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const sourceRoot = path.join(root, 'admin-ui', 'src');
+const assetRoot = path.join(root, 'assets', 'admin');
+
+const entries = {
+  fields: path.join(sourceRoot, 'fields.ts'),
+  query: path.join(sourceRoot, 'query.ts'),
+  'columns-runtime': path.join(sourceRoot, 'columns-runtime.ts'),
+  'custom-tables': path.join(sourceRoot, 'custom-tables.ts'),
+};
+
+/** WordPress script handles each entry needs; the app uses WordPress's own React. */
+const entryDependencies = {
+  app: ['react', 'react-dom'],
+};
+
+const styles = {
+  fields: path.join(sourceRoot, 'fields.scss'),
+  query: path.join(sourceRoot, 'query.scss'),
+  'columns-runtime': path.join(sourceRoot, 'columns.scss'),
+  'custom-tables': path.join(sourceRoot, 'custom-tables.scss'),
+};
+
+const approvedDevDependencies = {
+  '@biomejs/biome': '2.5.15',
+  '@types/react': '18.3.12',
+  '@types/react-dom': '18.3.1',
+  esbuild: '0.28.2',
+  // Bundled into the dashboard app; React itself is WordPress's own (wp-element), not bundled.
+  'react-router': '7.18.4',
+  sass: '1.105.1',
+  typescript: 'npm:@typescript/typescript6@6.0.2',
+};
+
+const expectedScripts = {
+  build: 'npm run build:admin',
+  'build:admin': 'node tools/admin/admin-toolchain.mjs build',
+  'check:engines': 'node tools/admin/admin-toolchain.mjs check-engines',
+  'lint:css': 'node tools/admin/admin-toolchain.mjs lint-css',
+  'lint:js': 'biome lint admin-ui/src',
+  'lint:package': 'node tools/admin/admin-toolchain.mjs lint-package',
+  typecheck: 'tsc6 --noEmit --project tsconfig.json',
+};
+
+function fail(message) {
+  throw new Error(message);
+}
+
+function readPackage() {
+  return JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8'));
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function npmMajor() {
+  const userAgent = process.env.npm_config_user_agent ?? '';
+  const match = userAgent.match(/(?:^|\s)npm\/(\d+)(?:\.|\s|$)/);
+  if (match) {
+    return Number(match[1]);
+  }
+
+  const version = execFileSync('npm', ['--version'], {
+    cwd: root,
+    encoding: 'utf8',
+  }).trim();
+  const major = Number(version.split('.')[0]);
+  if (!Number.isInteger(major)) {
+    fail(`Unable to determine npm major from "${version}".`);
+  }
+
+  return major;
+}
+
+function checkEngines() {
+  const nodeMajor = Number(process.versions.node.split('.')[0]);
+  if (nodeMajor !== 24) {
+    fail(`Node 24 is required; observed ${process.versions.node}.`);
+  }
+
+  const npm = npmMajor();
+  if (npm < 10 || npm >= 12) {
+    fail(`npm >=10 <12 is required; observed major ${npm}.`);
+  }
+}
+
+function lintPackage() {
+  const pkg = readPackage();
+
+  if (pkg.private !== true) {
+    fail('package.json must remain private.');
+  }
+  if (pkg.license !== 'GPL-3.0-or-later') {
+    fail('package.json license must remain GPL-3.0-or-later.');
+  }
+  if (
+    pkg.engines?.node !== '>=24 <25'
+    || pkg.engines?.npm !== '>=10 <12'
+  ) {
+    fail('package.json engine contract drifted.');
+  }
+  if (!sameJson(pkg.devDependencies, approvedDevDependencies)) {
+    fail('package.json devDependencies are outside the approved minimal toolchain.');
+  }
+  if (pkg.dependencies !== undefined && Object.keys(pkg.dependencies).length !== 0) {
+    fail('Runtime npm dependencies are not allowed.');
+  }
+  if (pkg.overrides !== undefined) {
+    fail('npm overrides are forbidden in the minimal toolchain.');
+  }
+  if (!sameJson(pkg.scripts, expectedScripts)) {
+    fail('package.json scripts do not match the approved toolchain contract.');
+  }
+  if (pkg.repository?.url !== 'git+https://github.com/Vertex-Systems-Network/wpessential-pro.git') {
+    fail('package.json repository metadata drifted.');
+  }
+  if (pkg.homepage !== 'https://wpessential.org') {
+    fail('package.json homepage metadata drifted.');
+  }
+}
+
+function scssFiles() {
+  return readdirSync(sourceRoot)
+    .filter((file) => file.endsWith('.scss'))
+    .map((file) => path.join(sourceRoot, file))
+    .sort();
+}
+
+function validateScssSource(file) {
+  const source = readFileSync(file, 'utf8');
+  if (/\r/.test(source)) {
+    fail(`${path.relative(root, file)} must use LF line endings.`);
+  }
+  if (/[ \t]+$/m.test(source)) {
+    fail(`${path.relative(root, file)} contains trailing whitespace.`);
+  }
+  if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(source)) {
+    fail(`${path.relative(root, file)} contains unsafe control characters.`);
+  }
+
+  const warnings = [];
+  sass.compile(file, {
+    style: 'expanded',
+    sourceMap: false,
+    logger: {
+      warn(message) {
+        warnings.push(message);
+      },
+      debug() {},
+    },
+  });
+
+  if (warnings.length > 0) {
+    fail(
+      `${path.relative(root, file)} emitted Sass warnings:\n${warnings.join('\n')}`,
+    );
+  }
+}
+
+function lintCss() {
+  const files = scssFiles();
+  if (files.length === 0) {
+    fail('No SCSS sources were discovered.');
+  }
+  for (const file of files) {
+    validateScssSource(file);
+  }
+}
+
+// "react" and "react-dom" resolve to WordPress's globals (wp_enqueue_script deps react, react-dom).
+const wordpressReactPlugin = {
+  name: 'wpessential-wordpress-react',
+  setup(build) {
+    build.onResolve({ filter: /^react(-dom)?(\/client)?$/ }, (args) => ({
+      path: args.path,
+      namespace: 'wpessential-wp-react',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'wpessential-wp-react' }, (args) => ({
+      contents: `module.exports = window.${args.path.startsWith('react-dom') ? 'ReactDOM' : 'React'};`,
+      loader: 'js',
+    }));
+  },
+};
+
+const ignoreScssPlugin = {
+  name: 'wpessential-ignore-scss-side-effects',
+  setup(build) {
+    build.onResolve({ filter: /\.scss$/ }, (args) => ({
+      path: path.resolve(args.resolveDir, args.path),
+      namespace: 'wpessential-scss-stub',
+    }));
+    build.onLoad(
+      { filter: /.*/, namespace: 'wpessential-scss-stub' },
+      () => ({
+        contents: '',
+        loader: 'js',
+      }),
+    );
+  },
+};
+
+function compileStyles() {
+  for (const [entry, source] of Object.entries(styles)) {
+    const warnings = [];
+    const result = sass.compile(source, {
+      style: 'compressed',
+      sourceMap: false,
+      logger: {
+        warn(message) {
+          warnings.push(message);
+        },
+        debug() {},
+      },
+    });
+    if (warnings.length > 0) {
+      fail(`${path.relative(root, source)} emitted Sass warnings:\n${warnings.join('\n')}`);
+    }
+    writeFileSync(path.join(assetRoot, `${entry}.css`), result.css, 'utf8');
+  }
+}
+
+function assetVersion(entry) {
+  const hash = createHash('sha256');
+  hash.update(readFileSync(path.join(assetRoot, `${entry}.js`)));
+  hash.update('\0');
+  hash.update(readFileSync(path.join(assetRoot, `${entry}.css`)));
+  return hash.digest('hex').slice(0, 20);
+}
+
+function writeAssetMetadata() {
+  for (const entry of Object.keys(entries)) {
+    const version = assetVersion(entry);
+    const deps = (entryDependencies[entry] ?? []).map((handle) => `'${handle}'`).join(', ');
+    const php = `<?php return ['dependencies' => [${deps}], 'version' => '${version}'];\n`;
+    writeFileSync(path.join(assetRoot, `${entry}.asset.php`), php, 'utf8');
+  }
+}
+
+function verifyAssets() {
+  for (const entry of Object.keys(entries)) {
+    for (const suffix of ['js', 'css', 'asset.php']) {
+      const file = path.join(assetRoot, `${entry}.${suffix}`);
+      if (statSync(file).size <= 0) {
+        fail(`Generated asset is empty: ${path.relative(root, file)}`);
+      }
+    }
+
+    const metadata = readFileSync(
+      path.join(assetRoot, `${entry}.asset.php`),
+      'utf8',
+    );
+    if (
+      !/^<\?php return \['dependencies' => \[('[a-z-]+'(, '[a-z-]+')*)?\], 'version' => '[0-9a-f]{20}'\];\n$/.test(
+        metadata,
+      )
+    ) {
+      fail(`Generated metadata is invalid for ${entry}.`);
+    }
+  }
+}
+
+async function buildAdmin() {
+  lintCss();
+
+  rmSync(assetRoot, { recursive: true, force: true });
+  mkdirSync(assetRoot, { recursive: true });
+
+  await esbuildBuild({
+    entryPoints: entries,
+    outdir: assetRoot,
+    entryNames: '[name]',
+    bundle: true,
+    platform: 'browser',
+    format: 'iife',
+    target: ['es2022'],
+    minify: true,
+    sourcemap: false,
+    legalComments: 'none',
+    charset: 'utf8',
+    plugins: [wordpressReactPlugin, ignoreScssPlugin],
+    jsx: 'transform',
+    jsxFactory: 'React.createElement',
+    jsxFragment: 'React.Fragment',
+    logLevel: 'info',
+  });
+
+  compileStyles();
+  writeAssetMetadata();
+  verifyAssets();
+}
+
+const command = process.argv[2];
+switch (command) {
+  case 'check-engines':
+    checkEngines();
+    break;
+  case 'lint-package':
+    lintPackage();
+    break;
+  case 'lint-css':
+    lintCss();
+    break;
+  case 'build':
+    await buildAdmin();
+    break;
+  default:
+    fail(
+      'Usage: node tools/admin/admin-toolchain.mjs <check-engines|lint-package|lint-css|build>',
+    );
+}

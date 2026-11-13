@@ -9,6 +9,8 @@ if ($wpDir === '' || !is_file($wpDir . '/wp-load.php') || !is_file($wpDir . '/wp
 }
 
 $root = dirname(__DIR__, 4);
+
+require_once dirname(__DIR__, 3) . '/Integration/free-root.php';
 $muDir = $wpDir . '/wp-content/mu-plugins';
 if (!is_dir($muDir) && !mkdir($muDir, 0777, true) && !is_dir($muDir)) {
     fwrite(STDERR, "FAIL: unable to create Status reference mu-plugin directory\n");
@@ -91,7 +93,9 @@ add_action('plugins_loaded', static function (): void {
     }
 }, -200);
 
-require_once $wpeRoot . '/wpessential.php';
+// The Free plugin bootstrap lives in the Free checkout (WPE_FREE_ROOT, default ../wpessential).
+$wpeFreeRoot = getenv('WPE_FREE_ROOT') ?: dirname($wpeRoot) . '/wpessential';
+require_once $wpeFreeRoot . '/wpessential.php';
 PHP);
 
 $muPath = $muDir . '/wpessential-status-reference.php';

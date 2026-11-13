@@ -1,0 +1,418 @@
+<?php
+
+declare(strict_types=1);
+
+// Builds the WPEssential Pro add-on ZIP. The Free plugin is built in
+// Vertex-Systems-Network/wpessential.
+
+const WPE_PRO_PACKAGE_SLUG = 'wpessential-pro';
+const WPE_PACKAGE_MTIME = 946684800; // 2000-01-01T00:00:00Z.
+
+function fail(string $message): never
+{
+    fwrite(STDERR, "[package] {$message}\n");
+    exit(1);
+}
+
+function ensureDirectory(string $path): void
+{
+    if (is_dir($path)) {
+        return;
+    }
+
+    if (!mkdir($path, 0775, true) && !is_dir($path)) {
+        fail("Unable to create directory: {$path}");
+    }
+}
+
+function removeTree(string $path): void
+{
+    if (!file_exists($path)) {
+        return;
+    }
+
+    if (is_file($path) || is_link($path)) {
+        @unlink($path);
+        return;
+    }
+
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($iterator as $item) {
+        $itemPath = $item->getPathname();
+        if ($item->isDir() && !$item->isLink()) {
+            @rmdir($itemPath);
+        } else {
+            @unlink($itemPath);
+        }
+    }
+
+    @rmdir($path);
+}
+
+/** @return list<string> */
+/** WPE Server (server/) runs only on the owner's sites and must never ship to users (ADR-0233). */
+function assertNoServerCode(string $stageRoot, string $label): void
+{
+    foreach (relativeFiles($stageRoot) as $relative) {
+        if (str_starts_with($relative, 'server/') || str_contains($relative, 'wpessential-server')) {
+            fail("{$label} distributable must not contain WPE Server files: {$relative}");
+        }
+        if (str_ends_with($relative, '.php')) {
+            $contents = (string) file_get_contents($stageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative));
+            if (str_contains($contents, 'WPEssential\\Server\\') || str_contains($contents, 'WPES_SERVER_')) {
+                fail("{$label} distributable must not contain WPE Server code: {$relative}");
+            }
+        }
+    }
+}
+
+function relativeFiles(string $root): array
+{
+    if (!is_dir($root)) {
+        fail("Expected directory is missing: {$root}");
+    }
+
+    $root = rtrim($root, '/\\');
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $item) {
+        if ($item->isLink()) {
+            fail('Symlinks are not permitted in the distributable payload: ' . $item->getPathname());
+        }
+        if (!$item->isFile()) {
+            continue;
+        }
+
+        $relative = substr($item->getPathname(), strlen($root) + 1);
+        $relative = str_replace('\\', '/', $relative);
+        if ($relative === '' || str_contains($relative, '../')) {
+            fail('Unsafe package path detected: ' . $relative);
+        }
+        $files[] = $relative;
+    }
+
+    sort($files, SORT_STRING);
+    return array_values($files);
+}
+
+function copyFileNormalized(string $source, string $destination): void
+{
+    if (!is_file($source) || is_link($source)) {
+        fail("Expected regular source file is missing: {$source}");
+    }
+
+    ensureDirectory(dirname($destination));
+    if (!copy($source, $destination)) {
+        fail("Unable to copy {$source} to {$destination}");
+    }
+    @chmod($destination, 0644);
+    @touch($destination, WPE_PACKAGE_MTIME);
+}
+
+/**
+ * @param null|callable(string):bool $include
+ */
+function copyTreeNormalized(string $sourceRoot, string $destinationRoot, ?callable $include = null): void
+{
+    foreach (relativeFiles($sourceRoot) as $relative) {
+        if ($include !== null && !$include($relative)) {
+            continue;
+        }
+
+        copyFileNormalized(
+            rtrim($sourceRoot, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative),
+            rtrim($destinationRoot, '/\\') . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative)
+        );
+    }
+}
+
+function runCommand(string $command): void
+{
+    fwrite(STDOUT, "[package] {$command}\n");
+    passthru($command, $exitCode);
+    if ($exitCode !== 0) {
+        fail("Command failed with exit code {$exitCode}");
+    }
+}
+
+function artifactExistsAndIsNonEmpty(string $root, string $relative): bool
+{
+    $path = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+    return is_file($path) && filesize($path) > 0;
+}
+
+/** @return list<string> */
+function adminArtifactTriplet(string $entry): array
+{
+    return [
+        "assets/admin/{$entry}.js",
+        "assets/admin/{$entry}.css",
+        "assets/admin/{$entry}.asset.php",
+    ];
+}
+
+/** @return list<string> */
+function requiredAdminArtifactTriplet(string $root, string $entry): array
+{
+    $triplet = adminArtifactTriplet($entry);
+    foreach ($triplet as $relative) {
+        if (!artifactExistsAndIsNonEmpty($root, $relative)) {
+            fail("Build the admin application before packaging; missing {$relative}");
+        }
+    }
+    return $triplet;
+}
+
+/** @return list<string> */
+function requiredAdminArtifact(string $root, string $relative): array
+{
+    if (!artifactExistsAndIsNonEmpty($root, $relative)) {
+        fail("Build the admin application before packaging; missing {$relative}");
+    }
+    return [$relative];
+}
+
+/** @return list<string> */
+function optionalAdminArtifactTriplet(string $root, string $entry): array
+{
+    $triplet = adminArtifactTriplet($entry);
+    $present = array_values(array_filter(
+        $triplet,
+        static fn (string $relative): bool => artifactExistsAndIsNonEmpty($root, $relative)
+    ));
+
+    if ($present === []) {
+        return [];
+    }
+
+    if (count($present) !== count($triplet)) {
+        fail("Optional admin entry {$entry} is only partially built; refusing to package an incomplete asset triplet.");
+    }
+
+    return $triplet;
+}
+
+function assertProjectMetadata(string $root): void
+{
+    $proPlugin = file_get_contents($root . '/wpessential-pro.php');
+    $license = file_get_contents($root . '/LICENSE');
+    if ($proPlugin === false || $license === false) {
+        fail('Unable to read required package metadata.');
+    }
+
+    foreach ([
+        'Plugin Name: WPEssential Pro',
+        'Version: 3.0.0',
+        'Requires at least: 6.9',
+        'Requires PHP: 8.2',
+        'Requires Plugins: wpessential',
+        'License: GPL-3.0-or-later',
+    ] as $needle) {
+        if (!str_contains($proPlugin, $needle)) {
+            fail("Pro plugin metadata is missing required value: {$needle}");
+        }
+    }
+
+    if (!str_contains($license, 'GNU GENERAL PUBLIC LICENSE') || !str_contains($license, 'Version 3, 29 June 2007')) {
+        fail('LICENSE is not the expected GNU GPL v3 license text.');
+    }
+}
+
+function isProModuleFile(string $relative): bool
+{
+    return !str_starts_with($relative, 'CustomPostTypes/')
+        && !str_starts_with($relative, 'Taxonomies/');
+}
+
+/** @param list<string> $proAssets */
+function stageProPackage(string $root, string $stageRoot, array $proAssets): void
+{
+    ensureDirectory($stageRoot);
+    copyFileNormalized($root . '/wpessential-pro.php', $stageRoot . '/wpessential-pro.php');
+    copyFileNormalized($root . '/LICENSE', $stageRoot . '/LICENSE');
+    copyTreeNormalized($root . '/frameworks/Modules', $stageRoot . '/frameworks/Modules', 'isProModuleFile');
+
+    foreach ($proAssets as $relative) {
+        copyFileNormalized(
+            $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative),
+            $stageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative)
+        );
+    }
+}
+
+/** @param list<string> $proAssets */
+function validateProStage(string $stageRoot, array $proAssets): void
+{
+    foreach ([
+        'wpessential-pro.php',
+        'LICENSE',
+        'frameworks/Modules/Roles/RolesModule.php',
+        'frameworks/Modules/AdminMenu/AdminMenuModule.php',
+        'frameworks/Modules/Settings/SettingsModule.php',
+        'frameworks/Modules/Dashboard/DashboardModule.php',
+        'frameworks/Modules/Profiles/ProfilesModule.php',
+        'frameworks/Modules/Membership/MembershipModule.php',
+        'frameworks/Modules/BuilderWidgets/BuilderWidgetsModule.php',
+        'frameworks/Modules/FormsWorkflows/FormsWorkflowsModule.php',
+        'frameworks/Modules/Cron/CronModule.php',
+        'frameworks/Modules/Notifications/NotificationsModule.php',
+        'frameworks/Modules/Emails/EmailsModule.php',
+        'frameworks/Modules/Chat/ChatModule.php',
+        'frameworks/Modules/SiteKit/SiteKitModule.php',
+        'frameworks/Modules/SiteKit/data/google-fonts.json',
+        ...$proAssets,
+    ] as $relative) {
+        $path = $stageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        if (!is_file($path) || filesize($path) === 0) {
+            fail("Required Pro distributable file is missing or empty: {$relative}");
+        }
+    }
+
+    foreach (relativeFiles($stageRoot) as $relative) {
+        if (
+            str_starts_with($relative, 'frameworks/Bootstrap/')
+            || str_starts_with($relative, 'frameworks/Contracts/')
+            || str_starts_with($relative, 'frameworks/Kernel/')
+            || str_starts_with($relative, 'frameworks/Platform/')
+            || str_starts_with($relative, 'frameworks/Modules/CustomPostTypes/')
+            || str_starts_with($relative, 'frameworks/Modules/Taxonomies/')
+            || $relative === 'wpessential.php'
+        ) {
+            fail("Free Platform/module payload leaked into Pro artifact: {$relative}");
+        }
+    }
+}
+
+/** @return array{sha256:string,files:int,bytes:int} */
+function buildArchive(string $stageRoot, string $archivePath, string $packageSlug): array
+{
+    if (!class_exists(ZipArchive::class)) {
+        fail('PHP Zip extension is required to build deterministic distributables.');
+    }
+
+    @unlink($archivePath);
+    $zip = new ZipArchive();
+    $openResult = $zip->open($archivePath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+    if ($openResult !== true) {
+        fail("Unable to open ZIP archive {$archivePath}; ZipArchive code {$openResult}");
+    }
+
+    $files = relativeFiles($stageRoot);
+    foreach ($files as $relative) {
+        $source = $stageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);
+        $entry = $packageSlug . '/' . $relative;
+
+        if (!$zip->addFile($source, $entry)) {
+            $zip->close();
+            fail("Unable to add archive entry: {$entry}");
+        }
+        if (!$zip->setMtimeName($entry, WPE_PACKAGE_MTIME)) {
+            $zip->close();
+            fail("Unable to normalize archive timestamp: {$entry}");
+        }
+        if (!$zip->setExternalAttributesName($entry, ZipArchive::OPSYS_UNIX, 0100644 << 16)) {
+            $zip->close();
+            fail("Unable to normalize archive permissions: {$entry}");
+        }
+        if (!$zip->setCompressionName($entry, ZipArchive::CM_DEFLATE, 9)) {
+            $zip->close();
+            fail("Unable to normalize archive compression: {$entry}");
+        }
+    }
+
+    if (!$zip->close()) {
+        fail("Unable to finalize ZIP archive: {$archivePath}");
+    }
+
+    $hash = hash_file('sha256', $archivePath);
+    if ($hash === false) {
+        fail("Unable to hash ZIP archive: {$archivePath}");
+    }
+
+    return ['sha256' => $hash, 'files' => count($files), 'bytes' => filesize($archivePath) ?: 0];
+}
+
+/**
+ * @param array{sha256:string,files:int,bytes:int} $result
+ */
+function writePackageManifest(string $path, string $artifact, string $root, string $edition, array $result): void
+{
+    file_put_contents(
+        $path,
+        json_encode([
+            'artifact' => $artifact,
+            'edition' => $edition,
+            'sha256' => $result['sha256'],
+            'files' => $result['files'],
+            'bytes' => $result['bytes'],
+            'root' => $root . '/',
+            'fixed_mtime' => gmdate('c', WPE_PACKAGE_MTIME),
+            'runtime_composer_packages' => $edition === 'free' ? 0 : null,
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL
+    );
+}
+
+try {
+    $root = realpath(__DIR__ . '/../..');
+    if ($root === false) {
+        fail('Unable to resolve repository root.');
+    }
+
+    assertProjectMetadata($root);
+
+    $proAssets = [
+        ...requiredAdminArtifactTriplet($root, 'fields'),
+        ...optionalAdminArtifactTriplet($root, 'query'),
+        ...requiredAdminArtifactTriplet($root, 'columns-runtime'),
+    ];
+
+    $tempRoot = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'wpessential-dist-' . bin2hex(random_bytes(8));
+    $proStage = $tempRoot . '/pro/' . WPE_PRO_PACKAGE_SLUG;
+    register_shutdown_function(static function () use ($tempRoot): void {
+        removeTree($tempRoot);
+    });
+
+    stageProPackage($root, $proStage, $proAssets);
+    assertNoServerCode($proStage, 'Pro');
+    validateProStage($proStage, $proAssets);
+
+    $artifactDir = $root . '/artifacts';
+    ensureDirectory($artifactDir);
+
+    $proA = $artifactDir . '/wpessential-pro-a.zip';
+    $proB = $artifactDir . '/wpessential-pro-b.zip';
+    $proFinal = $artifactDir . '/wpessential-pro.zip';
+    $proFirst = buildArchive($proStage, $proA, WPE_PRO_PACKAGE_SLUG);
+    $proSecond = buildArchive($proStage, $proB, WPE_PRO_PACKAGE_SLUG);
+    if ($proFirst['sha256'] !== $proSecond['sha256']) {
+        fail('Pro determinism check failed: repeated ZIP builds produced different SHA-256 values.');
+    }
+    @unlink($proFinal);
+    if (!rename($proA, $proFinal)) {
+        fail('Unable to promote deterministic Pro candidate to final artifact.');
+    }
+    @unlink($proB);
+
+    writePackageManifest(
+        $artifactDir . '/wpessential-pro-package.json',
+        'artifacts/wpessential-pro.zip',
+        WPE_PRO_PACKAGE_SLUG,
+        'pro',
+        $proFirst,
+    );
+
+    fwrite(STDOUT, json_encode([
+        'pro' => $proFirst + ['artifact' => 'artifacts/wpessential-pro.zip'],
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL);
+} catch (JsonException $exception) {
+    fail('Invalid JSON metadata: ' . $exception->getMessage());
+} catch (Throwable $exception) {
+    fail($exception::class . ': ' . $exception->getMessage());
+}

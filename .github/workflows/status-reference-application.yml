@@ -4,12 +4,6 @@ on:
   pull_request:
     paths:
       - 'frameworks/Modules/Status/**'
-      - 'frameworks/Bootstrap/**'
-      - 'frameworks/Platform/Abilities/**'
-      - 'frameworks/Platform/Auth/**'
-      - 'frameworks/Platform/Definitions/**'
-      - 'frameworks/Platform/WordPress/Abilities/**'
-      - 'frameworks/Platform/WordPress/Auth/**'
       - 'tests/Integration/Modules/Status/**'
       - 'docs/IMPLEMENTATION/STATUS-MANAGER-PRODUCTION-REFERENCE-V1.md'
       - '.github/workflows/status-reference-application.yml'
@@ -62,6 +56,25 @@ jobs:
           test "$(git rev-parse HEAD)" = "${WPE_EXPECTED_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -70,7 +83,7 @@ jobs:
           coverage: none
 
       - name: Install locked PHP graph
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer update --no-interaction --prefer-dist --no-progress
 
       - name: Prepare exact WordPress fixture
         shell: bash
@@ -146,6 +159,25 @@ jobs:
           test "$(git rev-parse HEAD)" = "${WPE_EXPECTED_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
       - name: Setup PHP 8.4
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -154,7 +186,7 @@ jobs:
           coverage: none
 
       - name: Install locked PHP graph
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer update --no-interaction --prefer-dist --no-progress
 
       - name: Prepare exact WordPress fixture
         shell: bash

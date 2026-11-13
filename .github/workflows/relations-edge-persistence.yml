@@ -3,7 +3,6 @@ name: Relations Edge Persistence
 on:
   pull_request:
     paths:
-      - 'frameworks/Contracts/RelationQueryConsumerInterface.php'
       - 'frameworks/Modules/Relations/**'
       - 'tests/Unit/Modules/Relations/**'
       - 'tests/Integration/relations-edge-persistence-mysql.php'
@@ -13,7 +12,6 @@ on:
     branches:
       - 'implementation/**'
     paths:
-      - 'frameworks/Contracts/RelationQueryConsumerInterface.php'
       - 'frameworks/Modules/Relations/**'
       - 'tests/Unit/Modules/Relations/**'
       - 'tests/Integration/relations-edge-persistence-mysql.php'
@@ -67,6 +65,25 @@ jobs:
           test "$(git rev-parse HEAD)" = "${WPE_EXPECTED_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -79,7 +96,7 @@ jobs:
           php -l tests/Integration/relations-edge-persistence-mysql.php
           php -l tests/Integration/relations-query-consumer-mysql.php
           find frameworks/Modules/Relations -name '*.php' -print0 | xargs -0 -n1 php -l
-          php -l frameworks/Contracts/RelationQueryConsumerInterface.php
+          php -l "${WPE_FREE_ROOT}/frameworks/Contracts/RelationQueryConsumerInterface.php"
 
       - name: Run durable edge persistence integration
         env:
@@ -129,6 +146,25 @@ jobs:
           test "$(git rev-parse HEAD)" = "${WPE_EXPECTED_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
       - name: Setup PHP 8.4
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -141,7 +177,7 @@ jobs:
           php -l tests/Integration/relations-edge-persistence-mysql.php
           php -l tests/Integration/relations-query-consumer-mysql.php
           find frameworks/Modules/Relations -name '*.php' -print0 | xargs -0 -n1 php -l
-          php -l frameworks/Contracts/RelationQueryConsumerInterface.php
+          php -l "${WPE_FREE_ROOT}/frameworks/Contracts/RelationQueryConsumerInterface.php"
 
       - name: Run durable edge persistence integration
         env:

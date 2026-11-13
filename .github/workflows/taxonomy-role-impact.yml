@@ -3,10 +3,7 @@ name: Taxonomy Role Impact
 on:
   pull_request:
     paths:
-      - 'frameworks/Contracts/RoleImpactReadServiceInterface.php'
-      - 'frameworks/Modules/Taxonomies/**'
       - 'frameworks/Modules/Roles/**'
-      - 'wpessential.php'
       - 'wpessential-pro.php'
       - 'tests/Unit/Modules/Taxonomies/TaxonomyRoleImpactReadModelTest.php'
       - 'tests/Integration/wordpress-taxonomy-role-impact.php'
@@ -15,10 +12,7 @@ on:
     branches:
       - 'implementation/**'
     paths:
-      - 'frameworks/Contracts/RoleImpactReadServiceInterface.php'
-      - 'frameworks/Modules/Taxonomies/**'
       - 'frameworks/Modules/Roles/**'
-      - 'wpessential.php'
       - 'wpessential-pro.php'
       - 'tests/Unit/Modules/Taxonomies/TaxonomyRoleImpactReadModelTest.php'
       - 'tests/Integration/wordpress-taxonomy-role-impact.php'
@@ -73,6 +67,25 @@ jobs:
           test "$(git rev-parse HEAD)" = "${WPE_EXPECTED_SHA}"
           test -z "$(git status --porcelain=v1 --untracked-files=no)"
 
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
       - name: Setup PHP
         uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
         with:
@@ -83,21 +96,21 @@ jobs:
       - name: Install locked PHP toolchain
         uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520
         with:
-          dependency-versions: locked
+          dependency-versions: highest
 
       - name: Validate focused source and unit evidence
         shell: bash
         run: |
           set -euo pipefail
-          php -l frameworks/Contracts/RoleImpactReadServiceInterface.php
+          php -l "${WPE_FREE_ROOT}/frameworks/Contracts/RoleImpactReadServiceInterface.php"
           php -l frameworks/Modules/Roles/RolesReadService.php
           php -l frameworks/Modules/Roles/RolesModule.php
-          php -l frameworks/Modules/Taxonomies/TaxonomyRoleImpactReadModel.php
-          php -l frameworks/Modules/Taxonomies/TaxonomyDefinitionReadModel.php
-          php -l frameworks/Modules/Taxonomies/TaxonomyValidationAbilityHandler.php
-          php -l frameworks/Modules/Taxonomies/TaxonomyAbilityHandler.php
-          php -l frameworks/Modules/Taxonomies/TaxonomyModule.php
-          php -l wpessential.php
+          php -l "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies/TaxonomyRoleImpactReadModel.php"
+          php -l "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies/TaxonomyDefinitionReadModel.php"
+          php -l "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies/TaxonomyValidationAbilityHandler.php"
+          php -l "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies/TaxonomyAbilityHandler.php"
+          php -l "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies/TaxonomyModule.php"
+          php -l "${WPE_FREE_ROOT}/wpessential.php"
           php -l wpessential-pro.php
           php -l tests/Integration/wordpress-taxonomy-role-impact.php
           vendor/bin/phpunit tests/Unit/Modules/Taxonomies/TaxonomyRoleImpactReadModelTest.php
@@ -160,14 +173,15 @@ jobs:
             "${pro_root}/frameworks/Modules"
 
           for shared in Bootstrap Contracts Kernel Platform; do
-            cp -a "${GITHUB_WORKSPACE}/frameworks/${shared}" "${free_root}/frameworks/${shared}"
+            cp -a "${WPE_FREE_ROOT}/frameworks/${shared}" "${free_root}/frameworks/${shared}"
           done
-          cp -a "${GITHUB_WORKSPACE}/frameworks/functions.php" "${free_root}/frameworks/functions.php"
-          cp -a "${GITHUB_WORKSPACE}/frameworks/Modules/CustomPostTypes" "${free_root}/frameworks/Modules/CustomPostTypes"
-          cp -a "${GITHUB_WORKSPACE}/frameworks/Modules/Taxonomies" "${free_root}/frameworks/Modules/Taxonomies"
-          cp -a "${GITHUB_WORKSPACE}/vendor" "${free_root}/vendor"
-          cp -a "${GITHUB_WORKSPACE}/wpessential.php" "${free_root}/wpessential.php"
-          cp -a "${GITHUB_WORKSPACE}/readme.txt" "${free_root}/readme.txt"
+          cp -a "${WPE_FREE_ROOT}/frameworks/functions.php" "${free_root}/frameworks/functions.php"
+          cp -a "${WPE_FREE_ROOT}/frameworks/Modules/CustomPostTypes" "${free_root}/frameworks/Modules/CustomPostTypes"
+          cp -a "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies" "${free_root}/frameworks/Modules/Taxonomies"
+          composer install --working-dir="${WPE_FREE_ROOT}" --no-dev --no-interaction --prefer-dist --no-progress
+          cp -a "${WPE_FREE_ROOT}/vendor" "${free_root}/vendor"
+          cp -a "${WPE_FREE_ROOT}/wpessential.php" "${free_root}/wpessential.php"
+          cp -a "${WPE_FREE_ROOT}/readme.txt" "${free_root}/readme.txt"
           cp -a "${GITHUB_WORKSPACE}/LICENSE" "${free_root}/LICENSE"
 
           for module_dir in "${GITHUB_WORKSPACE}"/frameworks/Modules/*; do

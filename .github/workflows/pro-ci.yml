@@ -1,0 +1,184 @@
+name: Pro CI
+
+# WPEssential Pro is an add-on: every job runs against a checkout of the Free plugin
+# (Vertex-Systems-Network/wpessential) placed beside this repository at ../wpessential.
+# Set the repository variable WPE_FREE_REF to pin a Free branch/tag/SHA (default: main).
+# If the Free repository is private, add a read-only token as the WPE_FREE_REPO_TOKEN secret.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pro-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pro:
+    name: Unit, admin build and Free+Pro package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout exact source head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          test -f "${free_root}/wpessential.php"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
+      - name: Set up PHP 8.2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.2'
+          extensions: zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Set up Node 24
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '24'
+
+      - name: Install PHP dependencies (Free from ../wpessential)
+        run: composer update --no-interaction --prefer-dist --no-progress
+
+      - name: Lint Pro PHP sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -l wpessential-pro.php
+          find frameworks tests tools -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+
+      - name: Pro unit tests
+        run: vendor/bin/phpunit --configuration=phpunit.xml.dist
+
+      - name: Install locked admin build graph
+        run: npm ci --ignore-scripts
+
+      - name: Typecheck and lint Pro admin sources
+        run: |
+          npm run typecheck
+          npm run lint:js
+
+      - name: Build Pro admin assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run build:admin
+          for entry in fields columns-runtime; do
+            test -s "assets/admin/${entry}.js"
+            test -s "assets/admin/${entry}.css"
+            test -s "assets/admin/${entry}.asset.php"
+          done
+
+      - name: Build the Pro ZIP twice and prove determinism
+        shell: bash
+        run: |
+          set -euo pipefail
+          php tools/release/build-pro-distributable.php
+          cp artifacts/wpessential-pro.zip /tmp/wpessential-pro-first.zip
+          php tools/release/build-pro-distributable.php
+          cmp --silent /tmp/wpessential-pro-first.zip artifacts/wpessential-pro.zip
+
+      - name: Validate Pro ZIP integrity and package boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          unzip -t artifacts/wpessential-pro.zip
+          unzip -Z1 artifacts/wpessential-pro.zip | tee artifacts/wpessential-pro-files.txt
+          if grep -Ev '^wpessential-pro/' artifacts/wpessential-pro-files.txt; then
+            echo 'Pro archive contains an entry outside wpessential-pro/' >&2
+            exit 1
+          fi
+          for required in \
+            wpessential-pro/wpessential-pro.php \
+            wpessential-pro/LICENSE \
+            wpessential-pro/frameworks/Modules/Compatibility/LocalCompatibilityPreflight.php \
+            wpessential-pro/frameworks/Modules/Roles/RolesModule.php \
+            wpessential-pro/frameworks/Modules/DashboardWidgets/DashboardWidgetsModule.php \
+            wpessential-pro/frameworks/Modules/Membership/MembershipModule.php \
+            wpessential-pro/frameworks/Modules/Chat/ChatModule.php \
+            wpessential-pro/assets/admin/fields.js \
+            wpessential-pro/assets/admin/fields.css \
+            wpessential-pro/assets/admin/fields.asset.php \
+            wpessential-pro/assets/admin/columns-runtime.js \
+            wpessential-pro/assets/admin/columns-runtime.css \
+            wpessential-pro/assets/admin/columns-runtime.asset.php
+          do
+            grep -Fxq "${required}" artifacts/wpessential-pro-files.txt
+          done
+          if grep -E '^wpessential-pro/frameworks/(Bootstrap|Contracts|Kernel|Platform)/' artifacts/wpessential-pro-files.txt; then
+            echo 'Pro archive duplicates Free Platform/Kernel source' >&2
+            exit 1
+          fi
+          if grep -E '^wpessential-pro/frameworks/Modules/(CustomPostTypes|Taxonomies)/' artifacts/wpessential-pro-files.txt; then
+            echo 'Pro archive duplicates permanently Free module source' >&2
+            exit 1
+          fi
+          if grep -Fxq 'wpessential-pro/wpessential.php' artifacts/wpessential-pro-files.txt; then
+            echo 'Pro archive contains the Free plugin bootstrap' >&2
+            exit 1
+          fi
+
+      - name: Build the Free ZIP from the Free checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "${WPE_FREE_ROOT}"
+          npm ci --ignore-scripts
+          npm run build:admin
+          php tools/release/build-distributable.php
+          test -s artifacts/wpessential.zip
+
+      - name: Verify packaged Free and Pro compatibility bootstrap behavior
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_root=/tmp/wpessential-package-bootstrap
+          rm -rf "${verify_root}"
+          mkdir -p "${verify_root}/free" "${verify_root}/pro"
+          unzip -q "${WPE_FREE_ROOT}/artifacts/wpessential.zip" -d "${verify_root}/free"
+          unzip -q artifacts/wpessential-pro.zip -d "${verify_root}/pro"
+          free="${verify_root}/free/wpessential"
+          pro="${verify_root}/pro/wpessential-pro"
+          php tools/release/verify-free-pro-bootstrap.php free "${free}"
+          php tools/release/verify-free-pro-bootstrap.php free-pro "${free}" "${pro}" free-first
+          php tools/release/verify-free-pro-bootstrap.php free-pro "${free}" "${pro}" pro-first
+          php tools/release/verify-free-pro-bootstrap.php free-pro-incompatible "${free}" "${pro}" free-first
+          php tools/release/verify-free-pro-bootstrap.php free-pro-incompatible "${free}" "${pro}" pro-first
+
+      - name: Upload Pro package
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wpessential-pro-${{ github.run_id }}
+          path: |
+            artifacts/wpessential-pro.zip
+            artifacts/wpessential-pro-package.json
+            artifacts/wpessential-pro-files.txt
+          if-no-files-found: error
+          retention-days: 14

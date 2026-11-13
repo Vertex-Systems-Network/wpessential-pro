@@ -1,0 +1,40 @@
+{
+  "name": "wpessential/wpessential-pro",
+  "description": "WPEssential Pro: premium module add-on for the WPEssential platform",
+  "type": "wordpress-plugin",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "wpessential/wpessential": "dev-main",
+    "phpunit/phpunit": "^11.5"
+  },
+  "repositories": [
+    {
+      "type": "path",
+      "url": "../wpessential",
+      "options": {
+        "symlink": false,
+        "versions": {
+          "wpessential/wpessential": "dev-main"
+        }
+      }
+    }
+  ],
+  "autoload-dev": {
+    "psr-4": {
+      "WPEssential\\Modules\\": "frameworks/Modules/",
+      "WPEssential\\Tests\\Unit\\": "tests/Unit/"
+    }
+  },
+  "scripts": {
+    "test:unit": "phpunit --configuration=phpunit.xml.dist",
+    "build": "php tools/release/build-pro-distributable.php"
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

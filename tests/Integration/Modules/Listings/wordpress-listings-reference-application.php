@@ -44,6 +44,8 @@ require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 require_once ABSPATH . 'wp-admin/includes/user.php';
 
 $root = dirname(__DIR__, 4);
+
+require_once dirname(__DIR__, 3) . '/Integration/free-root.php';
 require_once $root . '/vendor/autoload.php';
 
 use InvalidArgumentException;

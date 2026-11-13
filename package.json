@@ -1,0 +1,44 @@
+{
+  "name": "wpessential-pro-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "WPEssential WordPress admin application build toolchain",
+  "author": "WPEssential",
+  "license": "GPL-3.0-or-later",
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "platform",
+    "wpessential"
+  ],
+  "homepage": "https://wpessential.org",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vertex-Systems-Network/wpessential-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Vertex-Systems-Network/wpessential-pro/issues"
+  },
+  "engines": {
+    "node": ">=24 <25",
+    "npm": ">=10 <12"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "esbuild": "0.28.2",
+    "react-router": "7.18.4",
+    "sass": "1.105.1",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
+  },
+  "scripts": {
+    "build": "npm run build:admin",
+    "build:admin": "node tools/admin/admin-toolchain.mjs build",
+    "check:engines": "node tools/admin/admin-toolchain.mjs check-engines",
+    "lint:css": "node tools/admin/admin-toolchain.mjs lint-css",
+    "lint:js": "biome lint admin-ui/src",
+    "lint:package": "node tools/admin/admin-toolchain.mjs lint-package",
+    "typecheck": "tsc6 --noEmit --project tsconfig.json"
+  }
+}
