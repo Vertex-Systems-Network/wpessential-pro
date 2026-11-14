@@ -49,14 +49,14 @@ expect() {
 # Prints "written:<stored value>" or "denied:<reason>".
 pro_write() {
 	export WPE_VALUE="$1"
-	wp eval '
+	wp eval --user=admin '
 		$value = (string) getenv("WPE_VALUE");
 		$abilities = WPEssential\Bootstrap\Plugin::kernel()->services()->get("platform.abilities");
 		$key = null;
 		foreach (WPEssential\Modules\SiteKit\SiteKitSchema::fields() as $field => $definition) {
 			if (($definition["type"] ?? "") === "color") { $key = $field; break; }
 		}
-		$context = new WPEssential\Platform\Auth\ExecutionContext(new WPEssential\Platform\Auth\Principal(1), get_current_blog_id());
+		$context = new WPEssential\Platform\Auth\ExecutionContext(new WPEssential\Platform\Auth\Principal(get_current_user_id()), get_current_blog_id());
 		$input = ["values" => [$key => $value]];
 		$decision = $abilities->authorize("wpessential/site-kit/update", $context, $input);
 		if (!$decision->allowed) { echo "denied:" . $decision->reason; return; }
