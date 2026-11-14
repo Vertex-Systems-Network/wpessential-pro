@@ -62,12 +62,12 @@ pro_write() {
 		if (!$decision->allowed) { echo "denied:" . $decision->reason; return; }
 		$abilities->execute("wpessential/site-kit/update", $input, $context);
 		$stored = get_option("wpessential_site_kit", []);
-		echo "written:" . ($stored[$key] ?? "none");
+		echo "written:" . ($stored["values"][$key] ?? "none");
 	'
 }
 
 # Pro data as stored: the Site Kit option.
-pro_data() { wp eval '$v = get_option("wpessential_site_kit", []); echo is_array($v) ? implode(",", $v) : "none";'; }
+pro_data() { wp eval '$v = get_option("wpessential_site_kit", []); echo is_array($v["values"] ?? null) ? implode(",", array_map("strval", $v["values"])) : "none";'; }
 
 # Fires admin_init with a Pro admin form action. Prints "blocked" or "allowed".
 pro_admin_post() {
