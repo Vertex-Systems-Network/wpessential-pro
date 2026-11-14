@@ -71,14 +71,18 @@ wp plugin install "${FREE_ZIP}" >/dev/null
 wp plugin install "${PRO_ZIP}" >/dev/null
 rm -f "${LOG}"
 
-# 1. Pro alone: must not fatal and must not boot premium code.
-wp plugin activate wpessential-pro
-expect "Pro without Free" "[a-z_]+\|none\|none\|none\|0\|0"
-[[ "$(probe | cut -d'|' -f1)" != "compatible" ]] || fail "Pro reported compatible without Free"
+# 1. Pro alone: WordPress refuses it (Requires Plugins: wpessential); the site stays fine.
+if wp plugin activate wpessential-pro >/tmp/wpe-pro-alone.log 2>&1; then
+	fail "Pro activated without Free"
+fi
+grep -q "requires" /tmp/wpe-pro-alone.log || fail "Unexpected activation error: $(cat /tmp/wpe-pro-alone.log)"
+pass "WordPress refuses Pro without Free"
+expect "Site without plugins" "none\|none\|none\|none\|0\|0"
 check_log "Pro without Free"
 
-# 2. Free after Pro (pro-first order), no licence: premium visible, read-only.
+# 2. Free, then Pro, no licence: premium visible, read-only.
 wp plugin activate wpessential
+wp plugin activate wpessential-pro
 expect "Free+Pro, no licence" "compatible\|verification_unavailable\|true\|false\|[0-9]+\|[1-9][0-9]*"
 
 # 3. Licence states written by Free's LicenseService.
@@ -94,14 +98,25 @@ check_log "Licence states"
 
 # 4. Deactivating Free under an active Pro must not break the site.
 set_license "{\"key\":\"WPE-LIFECYCLE-0001\",\"status\":\"active\",\"pro\":true,\"plan\":\"Pro\",\"expires\":\"${future}\",\"checked\":${now},\"verified\":${now}}"
-wp plugin deactivate wpessential
-expect "Free deactivated, Pro active" "[a-z_]+\|none\|none\|none\|0\|0"
+if wp plugin deactivate wpessential >/tmp/wpe-free-off.log 2>&1; then
+	expect "Free deactivated, Pro active" "[a-z_]+\|none\|none\|none\|0\|0"
+else
+	pass "WordPress keeps Free active while Pro depends on it"
+fi
 wp eval 'echo get_bloginfo("name");' | grep -q Lifecycle || fail "Site broken after Free deactivation"
-check_log "Free deactivated"
+wp plugin activate wpessential >/dev/null 2>&1 || true
+
+# 4b. Free files vanish while Pro stays in active_plugins (manual delete, failed update).
+mv "${WP_DIR}/wp-content/plugins/wpessential" /tmp/wpessential-moved
+expect "Free files missing, Pro loaded" "[a-z_]+\|none\|none\|none\|0\|0"
+[[ "$(probe | cut -d'|' -f1)" != "compatible" ]] || fail "Pro reported compatible without Free files"
+wp eval 'echo get_bloginfo("name");' | grep -q Lifecycle || fail "Site broken with Free files missing"
+mv /tmp/wpessential-moved "${WP_DIR}/wp-content/plugins/wpessential"
+check_log "Free missing under Pro"
 
 # 5. Free back on, Pro off: Free keeps working; licence and data stay.
 tables_before="$(wp db query "SHOW TABLES LIKE '%wpe%'" --skip-column-names | sort | tr '\n' ' ')"
-wp plugin activate wpessential
+wp plugin activate wpessential >/dev/null 2>&1 || true
 wp plugin deactivate wpessential-pro
 expect "Free only" "none\|none\|none\|none\|0\|[1-9][0-9]*"
 wp option get wpessential_license --format=json | grep -q WPE-LIFECYCLE-0001 || fail "Licence lost after Pro deactivation"
@@ -113,7 +128,7 @@ tables_after="$(wp db query "SHOW TABLES LIKE '%wpe%'" --skip-column-names | sor
 [[ "${tables_before}" == "${tables_after}" ]] || fail "Tables changed after deleting Pro: '${tables_before}' -> '${tables_after}'"
 pass "Data tables kept after deleting Pro (${tables_after:-none})"
 wp plugin install "${PRO_ZIP}" --activate >/dev/null
-expect "Pro reinstalled (free-first order)" "compatible\|pro_active\|true\|true\|[1-9][0-9]*\|[1-9][0-9]*"
+expect "Pro reinstalled" "compatible\|pro_active\|true\|true\|[1-9][0-9]*\|[1-9][0-9]*"
 check_log "Full lifecycle"
 
 echo "Free + Pro lifecycle: all scenarios passed."
