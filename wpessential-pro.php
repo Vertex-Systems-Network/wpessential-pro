@@ -276,6 +276,47 @@ add_action(
         foreach ($moduleClasses as $moduleClass) {
             \WPEssential\Bootstrap\Plugin::registerModule(new $moduleClass());
         }
+
+        // Read-only enforcement: once Free has booted (plugins_loaded -100), deny mutating
+        // pro abilities while the entitlement does not allow changes.
+        add_action(
+            'plugins_loaded',
+            static function () use ($operations): void {
+                $kernel = \WPEssential\Bootstrap\Plugin::kernel();
+                $abilities = $kernel !== null && $kernel->services()->has('platform.abilities')
+                    ? $kernel->services()->get('platform.abilities')
+                    : null;
+                if (is_object($abilities) && method_exists($abilities, 'setPremiumMutationGate')) {
+                    $abilities->setPremiumMutationGate(static fn (): bool => $operations->allowsMutation());
+                }
+            },
+            -99,
+        );
+
+        // Pro admin form handlers that write directly (not through abilities).
+        if (!$operations->allowsMutation()) {
+            add_action(
+                'admin_init',
+                static function (): void {
+                    $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash((string) $_REQUEST['action'])) : '';
+                    $proWriteActions = [
+                        'wpessential_site_kit_save',
+                        'wpessential_site_kit_snippets',
+                        'wpessential_relations_save',
+                        'wpessential_relations_status',
+                        'wpessential_relations_edge',
+                    ];
+                    if (in_array($action, $proWriteActions, true)) {
+                        wp_die(
+                            esc_html__('WPEssential Pro is read-only: your licence is not active. Your data is safe; renew or activate your licence to make changes again.', 'wpessential'),
+                            esc_html__('WPEssential Pro is read-only', 'wpessential'),
+                            ['response' => 403, 'back_link' => true],
+                        );
+                    }
+                },
+                0,
+            );
+        }
     },
     -200,
 );
