@@ -230,15 +230,26 @@ add_action(
         // Publish compatible only after the declared Free API profile actually resolves.
         $publishCompatibility($compatibility);
 
-        $configuredState = defined('WPE_PRO_LOCAL_ENTITLEMENT_STATE')
-            ? (string) WPE_PRO_LOCAL_ENTITLEMENT_STATE
-            : \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable->value;
-        $state = \WPEssential\Platform\Entitlements\ProductEntitlementState::tryFrom($configuredState)
-            ?? \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable;
-        $reason = $state->value === $configuredState ? null : 'invalid_local_entitlement_state';
-        $entitlements = new \WPEssential\Platform\Entitlements\LocalProductEntitlementProvider(
-            new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot($state, $reason),
-        );
+        // Entitlement source, in order: an explicit local override (development and CI),
+        // the licence stored by Free, else verification unavailable (premium read-only).
+        $resolverClass = \WPEssential\Platform\Entitlements\LicenseEntitlementResolver::class;
+        if (defined('WPE_PRO_LOCAL_ENTITLEMENT_STATE')) {
+            $configuredState = (string) WPE_PRO_LOCAL_ENTITLEMENT_STATE;
+            $state = \WPEssential\Platform\Entitlements\ProductEntitlementState::tryFrom($configuredState)
+                ?? \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable;
+            $snapshot = new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot(
+                $state,
+                $state->value === $configuredState ? null : 'invalid_local_entitlement_state',
+            );
+        } elseif (class_exists($resolverClass)) {
+            $snapshot = $resolverClass::current();
+        } else {
+            $snapshot = new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot(
+                \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable,
+                'free_license_bridge_missing',
+            );
+        }
+        $entitlements = new \WPEssential\Platform\Entitlements\LocalProductEntitlementProvider($snapshot);
         $operations = new \WPEssential\Platform\Entitlements\PremiumOperationPolicy($entitlements);
 
         \WPEssential\Bootstrap\Plugin::setModuleActivationPolicy(
