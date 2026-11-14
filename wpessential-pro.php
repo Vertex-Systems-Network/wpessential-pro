@@ -230,15 +230,26 @@ add_action(
         // Publish compatible only after the declared Free API profile actually resolves.
         $publishCompatibility($compatibility);
 
-        $configuredState = defined('WPE_PRO_LOCAL_ENTITLEMENT_STATE')
-            ? (string) WPE_PRO_LOCAL_ENTITLEMENT_STATE
-            : \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable->value;
-        $state = \WPEssential\Platform\Entitlements\ProductEntitlementState::tryFrom($configuredState)
-            ?? \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable;
-        $reason = $state->value === $configuredState ? null : 'invalid_local_entitlement_state';
-        $entitlements = new \WPEssential\Platform\Entitlements\LocalProductEntitlementProvider(
-            new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot($state, $reason),
-        );
+        // Entitlement source, in order: an explicit local override (development and CI),
+        // the licence stored by Free, else verification unavailable (premium read-only).
+        $resolverClass = \WPEssential\Platform\Entitlements\LicenseEntitlementResolver::class;
+        if (defined('WPE_PRO_LOCAL_ENTITLEMENT_STATE')) {
+            $configuredState = (string) WPE_PRO_LOCAL_ENTITLEMENT_STATE;
+            $state = \WPEssential\Platform\Entitlements\ProductEntitlementState::tryFrom($configuredState)
+                ?? \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable;
+            $snapshot = new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot(
+                $state,
+                $state->value === $configuredState ? null : 'invalid_local_entitlement_state',
+            );
+        } elseif (class_exists($resolverClass)) {
+            $snapshot = $resolverClass::current();
+        } else {
+            $snapshot = new \WPEssential\Platform\Entitlements\ProductEntitlementSnapshot(
+                \WPEssential\Platform\Entitlements\ProductEntitlementState::VerificationUnavailable,
+                'free_license_bridge_missing',
+            );
+        }
+        $entitlements = new \WPEssential\Platform\Entitlements\LocalProductEntitlementProvider($snapshot);
         $operations = new \WPEssential\Platform\Entitlements\PremiumOperationPolicy($entitlements);
 
         \WPEssential\Bootstrap\Plugin::setModuleActivationPolicy(
@@ -264,6 +275,47 @@ add_action(
 
         foreach ($moduleClasses as $moduleClass) {
             \WPEssential\Bootstrap\Plugin::registerModule(new $moduleClass());
+        }
+
+        // Read-only enforcement: once Free has booted (plugins_loaded -100), deny mutating
+        // pro abilities while the entitlement does not allow changes.
+        add_action(
+            'plugins_loaded',
+            static function () use ($operations): void {
+                $kernel = \WPEssential\Bootstrap\Plugin::kernel();
+                $abilities = $kernel !== null && $kernel->services()->has('platform.abilities')
+                    ? $kernel->services()->get('platform.abilities')
+                    : null;
+                if (is_object($abilities) && method_exists($abilities, 'setPremiumMutationGate')) {
+                    $abilities->setPremiumMutationGate(static fn (): bool => $operations->allowsMutation());
+                }
+            },
+            -99,
+        );
+
+        // Pro admin form handlers that write directly (not through abilities).
+        if (!$operations->allowsMutation()) {
+            add_action(
+                'admin_init',
+                static function (): void {
+                    $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash((string) $_REQUEST['action'])) : '';
+                    $proWriteActions = [
+                        'wpessential_site_kit_save',
+                        'wpessential_site_kit_snippets',
+                        'wpessential_relations_save',
+                        'wpessential_relations_status',
+                        'wpessential_relations_edge',
+                    ];
+                    if (in_array($action, $proWriteActions, true)) {
+                        wp_die(
+                            esc_html__('WPEssential Pro is read-only: your licence is not active. Your data is safe; renew or activate your licence to make changes again.', 'wpessential'),
+                            esc_html__('WPEssential Pro is read-only', 'wpessential'),
+                            ['response' => 403, 'back_link' => true],
+                        );
+                    }
+                },
+                0,
+            );
         }
     },
     -200,

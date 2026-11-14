@@ -1,0 +1,127 @@
+name: Free + Pro Lifecycle
+
+# Installs the packaged Free and Pro ZIPs on real WordPress + MySQL and walks the
+# plugin lifecycle: activation order, Pro without Free, licence states, deactivation
+# and deletion without data loss.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      free_ref:
+        description: 'WPEssential Free branch, tag or SHA to test against'
+        required: false
+        default: ''
+  schedule:
+    - cron: '41 4 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wpessential-free-pro-lifecycle-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lifecycle:
+    name: WP ${{ matrix.wordpress }} / PHP ${{ matrix.php }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { wordpress: '6.9', php: '8.2' }
+          - { wordpress: '7.1', php: '8.5' }
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: wpessential_lifecycle
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=3s
+          --health-retries=20
+    steps:
+      - name: Checkout Pro
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ inputs.free_ref || vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mysqli, zip
+          tools: wp-cli
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+
+      - name: Build Free ZIP
+        shell: bash
+        working-directory: ${{ env.WPE_FREE_ROOT }}
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build:admin
+          php tools/release/build-distributable.php
+          test -s artifacts/wpessential.zip
+
+      - name: Build Pro ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build:admin
+          php tools/release/build-pro-distributable.php
+          test -s artifacts/wpessential-pro.zip
+
+      - name: Download WordPress ${{ matrix.wordpress }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp core download --version="${{ matrix.wordpress }}" --path=/tmp/wordpress --allow-root
+
+      - name: Run lifecycle scenarios
+        shell: bash
+        env:
+          WPE_DB_NAME: wpessential_lifecycle
+          WPE_DB_HOST: 127.0.0.1:3306
+        run: |
+          bash tests/Integration/free-pro-lifecycle.sh /tmp/wordpress \
+            "${WPE_FREE_ROOT}/artifacts/wpessential.zip" \
+            "${GITHUB_WORKSPACE}/artifacts/wpessential-pro.zip"
+
+      - name: Show debug log
+        if: always()
+        shell: bash
+        run: cat /tmp/wordpress/wp-content/debug.log 2>/dev/null | tail -100 || true
