@@ -1,0 +1,91 @@
+name: Build ZIP
+
+# Actions → Build ZIP → Run workflow: builds wpessential-pro.zip (against Free main, or the
+# Free ref you enter) and attaches it to the run. A v* tag also attaches it to a release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      free_ref:
+        description: 'WPEssential Free branch or tag to build against'
+        required: false
+        default: 'main'
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: wpessential-pro.zip
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ inputs.free_ref || vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        shell: bash
+        run: |
+          set -euo pipefail
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.2'
+          extensions: zip
+          coverage: none
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+
+      - name: Build
+        id: build
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run build:admin
+          php tools/release/build-pro-distributable.php
+          test -s artifacts/wpessential-pro.zip
+          version="$(grep -h -m1 '^ \* Version:' ./*.php | sed 's/^ \* Version:[[:space:]]*//')"
+          echo "version=${version:-dev}" >> "$GITHUB_OUTPUT"
+          sha256sum artifacts/wpessential-pro.zip | tee artifacts/wpessential-pro.zip.sha256
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: wpessential-pro-${{ steps.build.outputs.version }}-${{ github.run_number }}
+          path: |
+            artifacts/wpessential-pro.zip
+            artifacts/wpessential-pro.zip.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Attach to GitHub release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --notes "WPEssential Pro $GITHUB_REF_NAME"
+          gh release upload "$GITHUB_REF_NAME" artifacts/wpessential-pro.zip artifacts/wpessential-pro.zip.sha256 --clobber --repo "$GITHUB_REPOSITORY"
