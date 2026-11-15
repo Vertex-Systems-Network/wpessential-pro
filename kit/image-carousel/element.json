@@ -1,0 +1,188 @@
+{
+	"name": "image-carousel",
+	"title": "Image Carousel (WPEssential)",
+	"category": "media",
+	"description": "Scroll-snap carousel with WordPress responsive images, arrows/dots, reduced-motion-aware opt-in autoplay, and usable no-JS horizontal scroll.",
+	"icon": "images-alt2",
+	"elementor_icon": "eicon-slider-push",
+	"keywords": [
+		"carousel",
+		"slider",
+		"images",
+		"slideshow",
+		"gallery"
+	],
+	"panels": {
+		"content": "Slides",
+		"controls": "Navigation & playback",
+		"layout": "Layout & styling"
+	},
+	"attributes": {
+		"items": {
+			"type": "repeater",
+			"label": "Carousel slides",
+			"panel": "content",
+			"title_field": "caption",
+			"default": [],
+			"fields": {
+				"image": {
+					"type": "image",
+					"label": "Image",
+					"default": {}
+				},
+				"alt": {
+					"type": "text",
+					"label": "Image alt text",
+					"default": ""
+				},
+				"caption": {
+					"type": "text",
+					"label": "Caption",
+					"default": ""
+				},
+				"link": {
+					"type": "url",
+					"label": "Optional link",
+					"default": ""
+				}
+			}
+		},
+		"size": {
+			"type": "select",
+			"label": "Image size",
+			"default": "large",
+			"options": {
+				"thumbnail": "Thumbnail",
+				"medium": "Medium",
+				"medium_large": "Medium large",
+				"large": "Large",
+				"full": "Full"
+			},
+			"panel": "content"
+		},
+		"showCaptions": {
+			"type": "toggle",
+			"label": "Show captions",
+			"default": true,
+			"panel": "content"
+		},
+		"arrows": {
+			"type": "toggle",
+			"label": "Show navigation arrows",
+			"default": true,
+			"panel": "controls"
+		},
+		"dots": {
+			"type": "toggle",
+			"label": "Show slide dots",
+			"default": true,
+			"panel": "controls"
+		},
+		"loop": {
+			"type": "toggle",
+			"label": "Wrap navigation",
+			"default": true,
+			"panel": "controls"
+		},
+		"autoplay": {
+			"type": "toggle",
+			"label": "Autoplay (off by default)",
+			"default": false,
+			"panel": "controls"
+		},
+		"pauseOnHover": {
+			"type": "toggle",
+			"label": "Pause on hover/focus",
+			"default": true,
+			"panel": "controls"
+		},
+		"interval": {
+			"type": "range",
+			"label": "Autoplay interval",
+			"default": 5000,
+			"min": 2000,
+			"max": 15000,
+			"step": 500,
+			"unit": "ms",
+			"panel": "controls"
+		},
+		"slidesDesktop": {
+			"type": "range",
+			"label": "Slides per view",
+			"default": 1,
+			"min": 1,
+			"max": 5,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-carousel-visible",
+			"panel": "layout"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Slide spacing",
+			"default": "",
+			"min": 0,
+			"max": 64,
+			"step": 1,
+			"unit": "px",
+			"css": "--wpek-carousel-gap",
+			"responsive": true,
+			"panel": "layout"
+		},
+		"ratio": {
+			"type": "select",
+			"label": "Image ratio",
+			"default": "4/3",
+			"options": {
+				"4/3": "4:3",
+				"1/1": "Square",
+				"16/9": "16:9",
+				"3/2": "3:2",
+				"auto": "Natural"
+			},
+			"css": "--wpek-carousel-ratio",
+			"responsive": true,
+			"panel": "layout"
+		},
+		"fit": {
+			"type": "select",
+			"label": "Image fit",
+			"default": "cover",
+			"options": {
+				"cover": "Cover",
+				"contain": "Contain"
+			},
+			"css": "--wpek-carousel-fit",
+			"responsive": true,
+			"panel": "layout"
+		}
+	},
+	"groups": {
+		"slideBorder": {
+			"type": "border",
+			"label": "Slide border",
+			"selector": ".wpe-image-carousel__card",
+			"panel": "layout"
+		},
+		"slideShadow": {
+			"type": "shadow",
+			"label": "Slide shadow",
+			"selector": ".wpe-image-carousel__card",
+			"panel": "layout"
+		},
+		"captionTypography": {
+			"type": "typography",
+			"label": "Caption typography",
+			"selector": ".wpe-image-carousel__caption",
+			"panel": "layout"
+		},
+		"captionColor": {
+			"type": "colors",
+			"label": "Caption colour",
+			"prop": "color",
+			"selector": ".wpe-image-carousel__caption",
+			"panel": "layout"
+		}
+	}
+}

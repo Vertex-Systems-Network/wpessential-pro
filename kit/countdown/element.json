@@ -1,0 +1,155 @@
+{
+	"name": "countdown",
+	"title": "Countdown (WPEssential)",
+	"category": "content",
+	"description": "Timezone-aware countdown to a fixed date, accessible units, completion message and no-JS target-date fallback.",
+	"icon": "clock",
+	"elementor_icon": "eicon-countdown",
+	"keywords": [
+		"countdown",
+		"timer",
+		"launch",
+		"event",
+		"deadline"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"target": {
+			"type": "text",
+			"label": "Target date & time (site timezone: YYYY-MM-DD HH:MM:SS)",
+			"default": "2030-01-01 00:00:00",
+			"panel": "content"
+		},
+		"heading": {
+			"type": "text",
+			"label": "Countdown heading",
+			"default": "Coming soon",
+			"panel": "content"
+		},
+		"expiredText": {
+			"type": "text",
+			"label": "After countdown ends",
+			"default": "The event has started!",
+			"panel": "content"
+		},
+		"showDays": {
+			"type": "toggle",
+			"label": "Show days",
+			"default": true,
+			"panel": "content"
+		},
+		"showHours": {
+			"type": "toggle",
+			"label": "Show hours",
+			"default": true,
+			"panel": "content"
+		},
+		"showMinutes": {
+			"type": "toggle",
+			"label": "Show minutes",
+			"default": true,
+			"panel": "content"
+		},
+		"showSeconds": {
+			"type": "toggle",
+			"label": "Show seconds",
+			"default": true,
+			"panel": "content"
+		},
+		"style": {
+			"type": "select",
+			"label": "Appearance",
+			"default": "cards",
+			"options": {
+				"cards": "Cards",
+				"minimal": "Minimal",
+				"inline": "Inline"
+			},
+			"panel": "style"
+		},
+		"align": {
+			"type": "select",
+			"label": "Alignment",
+			"default": "center",
+			"options": {
+				"start": "Start",
+				"center": "Center",
+				"end": "End"
+			},
+			"responsive": true,
+			"css": "--wpek-count-align",
+			"map": {
+				"start": "--wpek-count-align:flex-start",
+				"center": "--wpek-count-align:center",
+				"end": "--wpek-count-align:flex-end"
+			},
+			"panel": "style"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Item gap",
+			"default": "",
+			"responsive": true,
+			"css": "--wpek-count-gap",
+			"min": 0,
+			"max": 80,
+			"step": 1,
+			"unit": "px",
+			"panel": "style"
+		},
+		"numberSize": {
+			"type": "range",
+			"label": "Number font size",
+			"default": "",
+			"responsive": true,
+			"css": "--wpek-count-size",
+			"min": 16,
+			"max": 180,
+			"step": 1,
+			"unit": "px",
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"cardBackground": {
+			"type": "background",
+			"label": "Timer card background",
+			"selector": ".wpe-countdown__unit",
+			"panel": "style"
+		},
+		"cardBorder": {
+			"type": "border",
+			"label": "Timer card border",
+			"selector": ".wpe-countdown__unit",
+			"panel": "style"
+		},
+		"numberTypography": {
+			"type": "typography",
+			"label": "Number typography",
+			"selector": ".wpe-countdown__number",
+			"panel": "style"
+		},
+		"numberColor": {
+			"type": "colors",
+			"label": "Number colour",
+			"selector": ".wpe-countdown__number",
+			"prop": "color",
+			"panel": "style"
+		},
+		"labelTypography": {
+			"type": "typography",
+			"label": "Label typography",
+			"selector": ".wpe-countdown__label",
+			"panel": "style"
+		},
+		"headingTypography": {
+			"type": "typography",
+			"label": "Heading typography",
+			"selector": ".wpe-countdown__heading",
+			"panel": "style"
+		}
+	}
+}

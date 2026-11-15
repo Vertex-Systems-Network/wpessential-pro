@@ -1,0 +1,172 @@
+{
+	"name": "chart",
+	"title": "Chart / Graph (WPEssential)",
+	"category": "content",
+	"icon": "chart-bar",
+	"elementor_icon": "eicon-skill-bar",
+	"keywords": [
+		"chart",
+		"graph",
+		"bars",
+		"donut"
+	],
+	"description": "Server-rendered accessible horizontal bars, columns and donut using numeric data and palette tokens.",
+	"panels": {
+		"content": "Data",
+		"style": "Chart style"
+	},
+	"attributes": {
+		"title": {
+			"type": "text",
+			"label": "Chart heading",
+			"default": "Category performance",
+			"panel": "content"
+		},
+		"items": {
+			"type": "repeater",
+			"label": "Data entries",
+			"title_field": "label",
+			"panel": "content",
+			"fields": {
+				"label": {
+					"type": "text",
+					"label": "Category label",
+					"default": "Item",
+					"panel": "content"
+				},
+				"value": {
+					"type": "text",
+					"label": "Non-negative numeric value",
+					"default": "10",
+					"panel": "content"
+				},
+				"color": {
+					"type": "select",
+					"label": "Theme color",
+					"default": "primary",
+					"panel": "content",
+					"options": {
+						"primary": "Primary",
+						"secondary": "Secondary",
+						"accent": "Accent",
+						"tertiary": "Tertiary",
+						"contrast": "Contrast"
+					}
+				}
+			},
+			"default": [
+				{
+					"label": "Design",
+					"value": "38",
+					"color": "primary"
+				},
+				{
+					"label": "Development",
+					"value": "27",
+					"color": "secondary"
+				},
+				{
+					"label": "Strategy",
+					"value": "15",
+					"color": "accent"
+				}
+			]
+		},
+		"type": {
+			"type": "select",
+			"label": "Chart style",
+			"default": "bars",
+			"panel": "style",
+			"options": {
+				"bars": "Horizontal bars",
+				"columns": "Vertical columns",
+				"donut": "Donut"
+			}
+		},
+		"showValues": {
+			"type": "toggle",
+			"label": "Show numeric values",
+			"default": true,
+			"panel": "style"
+		},
+		"showTable": {
+			"type": "toggle",
+			"label": "Screen-reader data table",
+			"default": true,
+			"panel": "style"
+		},
+		"limit": {
+			"type": "range",
+			"label": "Maximum rows",
+			"default": 12,
+			"panel": "content",
+			"min": 1,
+			"max": 20,
+			"step": 1,
+			"unit": ""
+		},
+		"height": {
+			"type": "range",
+			"label": "Chart height",
+			"default": "",
+			"panel": "style",
+			"min": 100,
+			"max": 600,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-chart-height"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Item spacing",
+			"default": "",
+			"panel": "style",
+			"min": 0,
+			"max": 60,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-chart-gap"
+		},
+		"barHeight": {
+			"type": "range",
+			"label": "Bar thickness",
+			"default": "",
+			"panel": "style",
+			"min": 5,
+			"max": 80,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-chart-thickness"
+		}
+	},
+	"groups": {
+		"titleType": {
+			"type": "typography",
+			"label": "Title typography",
+			"selector": ".wpe-chart__title",
+			"panel": "style"
+		},
+		"labelType": {
+			"type": "typography",
+			"label": "Labels typography",
+			"selector": ".wpe-chart__label",
+			"panel": "style"
+		},
+		"background": {
+			"type": "background",
+			"label": "Chart background",
+			"selector": ".wpe-chart",
+			"panel": "style"
+		},
+		"padding": {
+			"type": "spacing",
+			"label": "Chart padding",
+			"selector": ".wpe-chart",
+			"panel": "style",
+			"prop": "padding"
+		}
+	}
+}

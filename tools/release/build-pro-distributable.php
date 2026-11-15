@@ -238,6 +238,8 @@ function stageProPackage(string $root, string $stageRoot, array $proAssets): voi
     copyFileNormalized($root . '/wpessential-pro.php', $stageRoot . '/wpessential-pro.php');
     copyFileNormalized($root . '/LICENSE', $stageRoot . '/LICENSE');
     copyTreeNormalized($root . '/frameworks/Modules', $stageRoot . '/frameworks/Modules', 'isProModuleFile');
+    // Pro kit elements (ADR-0238 in Free): element.json, render.php, style and script.
+    copyTreeNormalized($root . '/kit', $stageRoot . '/kit');
 
     foreach ($proAssets as $relative) {
         copyFileNormalized(
@@ -267,6 +269,8 @@ function validateProStage(string $stageRoot, array $proAssets): void
         'frameworks/Modules/Chat/ChatModule.php',
         'frameworks/Modules/SiteKit/SiteKitModule.php',
         'frameworks/Modules/SiteKit/data/google-fonts.json',
+        'frameworks/Modules/ProKit/ProKitModule.php',
+        'kit/countdown/element.json',
         ...$proAssets,
     ] as $relative) {
         $path = $stageRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relative);

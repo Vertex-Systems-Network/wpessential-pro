@@ -1,0 +1,14 @@
+/* Progressive enhancement: target date remains available without JS. */
+.wpe-countdown{--wpek-count-gap:14px;--wpek-count-size:clamp(1.8rem,4vw,4rem);--wpek-count-align:center;min-width:0}
+.wpe-countdown__heading{margin:0 0 18px;text-align:center}
+.wpe-countdown__units{display:flex;flex-wrap:wrap;justify-content:var(--wpek-count-align);gap:var(--wpek-count-gap)}
+.wpe-countdown__unit{display:flex;flex-direction:column;gap:7px;align-items:center;min-width:65px;box-sizing:border-box}
+.wpe-countdown.is-cards .wpe-countdown__unit{padding:16px 20px;border:1px solid var(--wp--preset--color--border,#d9d9d9);border-radius:10px;background:var(--wp--preset--color--surface,transparent)}
+.wpe-countdown.is-inline .wpe-countdown__unit{flex-direction:row;align-items:baseline}
+.wpe-countdown__number{font-size:var(--wpek-count-size);font-weight:750;line-height:1.1;font-variant-numeric:tabular-nums}
+.wpe-countdown__label{font-size:.82rem;line-height:1.4}
+.wpe-countdown__fallback{text-align:center;font-size:.85rem;margin:12px 0 0}
+.wpe-countdown[data-ready="1"] .wpe-countdown__fallback{display:none}
+.wpe-countdown__completed{text-align:center;margin:12px 0 0}
+.wpe-countdown__completed[hidden]{display:none!important}
+.wpe-countdown[data-expired="1"] .wpe-countdown__units{display:none}

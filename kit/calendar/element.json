@@ -1,0 +1,185 @@
+{
+	"name": "calendar",
+	"title": "Events Calendar (WPEssential)",
+	"category": "content",
+	"description": "Timezone-aware curated events with strict date validation, upcoming list or accessible monthly grid, and optional safe event links.",
+	"icon": "calendar-alt",
+	"elementor_icon": "eicon-calendar",
+	"keywords": [
+		"calendar",
+		"events",
+		"schedule",
+		"date",
+		"appointment"
+	],
+	"panels": {
+		"content": "Events",
+		"display": "Calendar display",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"heading": {
+			"type": "text",
+			"label": "Calendar heading",
+			"default": "Upcoming events",
+			"panel": "content"
+		},
+		"events": {
+			"type": "repeater",
+			"label": "Events",
+			"title_field": "title",
+			"default": [],
+			"panel": "content",
+			"fields": {
+				"title": {
+					"type": "text",
+					"label": "Event title",
+					"default": "New event"
+				},
+				"date": {
+					"type": "text",
+					"label": "Start date (YYYY-MM-DD)",
+					"default": "2030-05-10"
+				},
+				"time": {
+					"type": "text",
+					"label": "Start time HH:MM (if timed)",
+					"default": "10:00"
+				},
+				"allDay": {
+					"type": "toggle",
+					"label": "All-day event",
+					"default": false
+				},
+				"location": {
+					"type": "text",
+					"label": "Location",
+					"default": ""
+				},
+				"description": {
+					"type": "textarea",
+					"label": "Description",
+					"default": ""
+				},
+				"url": {
+					"type": "url",
+					"label": "Event details URL",
+					"default": ""
+				}
+			}
+		},
+		"view": {
+			"type": "select",
+			"label": "Default view",
+			"default": "list",
+			"options": {
+				"list": "Event list",
+				"month": "Month calendar"
+			},
+			"panel": "display"
+		},
+		"month": {
+			"type": "text",
+			"label": "Calendar month (YYYY-MM, blank = current month)",
+			"default": "",
+			"panel": "display"
+		},
+		"hidePast": {
+			"type": "toggle",
+			"label": "Hide past events in list",
+			"default": true,
+			"panel": "display"
+		},
+		"limit": {
+			"type": "range",
+			"label": "Max visible list events",
+			"default": 12,
+			"min": 1,
+			"max": 50,
+			"step": 1,
+			"unit": "",
+			"panel": "display"
+		},
+		"showLocation": {
+			"type": "toggle",
+			"label": "Show location",
+			"default": true,
+			"panel": "display"
+		},
+		"showDescription": {
+			"type": "toggle",
+			"label": "Show description",
+			"default": true,
+			"panel": "display"
+		},
+		"linkLabel": {
+			"type": "text",
+			"label": "Details link text",
+			"default": "Event details",
+			"panel": "display"
+		},
+		"emptyMessage": {
+			"type": "text",
+			"label": "No events message",
+			"default": "No events scheduled.",
+			"panel": "display"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Event row spacing",
+			"default": "",
+			"min": 0,
+			"max": 60,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-calendar-gap",
+			"panel": "style"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Max calendar width",
+			"default": "",
+			"min": 320,
+			"max": 1500,
+			"step": 10,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-calendar-max",
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"cardBorder": {
+			"type": "border",
+			"label": "Event row border",
+			"selector": ".wpe-calendar__event",
+			"panel": "style"
+		},
+		"cardBackground": {
+			"type": "background",
+			"label": "Event row background",
+			"selector": ".wpe-calendar__event",
+			"panel": "style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"label": "Event title typography",
+			"selector": ".wpe-calendar__event-title",
+			"panel": "style"
+		},
+		"titleColor": {
+			"type": "colors",
+			"label": "Event title color",
+			"selector": ".wpe-calendar__event-title",
+			"prop": "color",
+			"panel": "style"
+		},
+		"calendarTypography": {
+			"type": "typography",
+			"label": "Calendar cell typography",
+			"selector": ".wpe-calendar__table td",
+			"panel": "style"
+		}
+	}
+}

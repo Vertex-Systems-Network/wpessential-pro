@@ -1,0 +1,124 @@
+{
+	"name": "modal",
+	"title": "Modal / Popup (WPEssential)",
+	"category": "content",
+	"description": "Explicit-click, accessible native dialog with backdrop/Escape close and an independently usable no-JS disclosure.",
+	"icon": "welcome-view-site",
+	"elementor_icon": "eicon-lightbox",
+	"keywords": [
+		"modal",
+		"popup",
+		"dialog",
+		"overlay",
+		"disclosure"
+	],
+	"panels": {
+		"content": "Content",
+		"behavior": "Behavior",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"trigger": {
+			"type": "text",
+			"label": "Open button text",
+			"default": "Learn more",
+			"panel": "content"
+		},
+		"title": {
+			"type": "text",
+			"label": "Dialog title",
+			"default": "More information",
+			"panel": "content"
+		},
+		"content": {
+			"type": "html",
+			"label": "Dialog content",
+			"default": "<p>Explore our services and get in touch.</p>",
+			"panel": "content"
+		},
+		"closeLabel": {
+			"type": "text",
+			"label": "Close button label",
+			"default": "Close",
+			"panel": "content"
+		},
+		"footerText": {
+			"type": "text",
+			"label": "Optional footer note",
+			"default": "",
+			"panel": "content"
+		},
+		"closeBackdrop": {
+			"type": "toggle",
+			"label": "Close when clicking backdrop",
+			"default": true,
+			"panel": "behavior"
+		},
+		"appearance": {
+			"type": "select",
+			"label": "Dialog appearance",
+			"default": "boxed",
+			"options": {
+				"boxed": "Boxed",
+				"minimal": "Minimal"
+			},
+			"panel": "style"
+		},
+		"width": {
+			"type": "range",
+			"label": "Dialog maximum width",
+			"default": "",
+			"min": 280,
+			"max": 1100,
+			"step": 10,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-modal-width",
+			"panel": "style"
+		},
+		"padding": {
+			"type": "range",
+			"label": "Dialog padding",
+			"default": "",
+			"min": 0,
+			"max": 100,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-modal-padding",
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"dialogBackground": {
+			"type": "background",
+			"label": "Dialog background",
+			"selector": ".wpe-modal__dialog",
+			"panel": "style"
+		},
+		"dialogBorder": {
+			"type": "border",
+			"label": "Dialog border/radius",
+			"selector": ".wpe-modal__dialog",
+			"panel": "style"
+		},
+		"dialogShadow": {
+			"type": "shadow",
+			"label": "Dialog shadow",
+			"selector": ".wpe-modal__dialog",
+			"panel": "style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"label": "Dialog title typography",
+			"selector": ".wpe-modal__title",
+			"panel": "style"
+		},
+		"contentTypography": {
+			"type": "typography",
+			"label": "Content typography",
+			"selector": ".wpe-modal__content",
+			"panel": "style"
+		}
+	}
+}

@@ -1,0 +1,27 @@
+/* WPEssential Kit — responsive Price List / Restaurant Menu. */
+.wpe-price-list{--wpek-pl-columns:1;--wpek-pl-gap:18px;--wpek-pl-image:96px;--wpek-pl-max:1100px;max-width:var(--wpek-pl-max);min-width:0;box-sizing:border-box}
+.wpe-price-list__heading{margin:0 0 22px;font-size:clamp(1.3rem,2.6vw,2rem);line-height:1.25}
+.wpe-price-list__items{display:grid;grid-template-columns:repeat(var(--wpek-pl-columns),minmax(0,1fr));gap:var(--wpek-pl-gap);list-style:none;margin:0;padding:0}
+.wpe-price-list__item{display:flex;align-items:start;gap:16px;min-width:0;box-sizing:border-box;transition:box-shadow .25s ease,transform .25s ease}
+.wpe-price-list.is-rows .wpe-price-list__item{padding:0 0 16px;border-bottom:1px solid var(--wpek-pl-divider,var(--wp--preset--color--border,#dedede))}
+.wpe-price-list.is-cards .wpe-price-list__item{padding:18px;border:1px solid var(--wpek-pl-divider,var(--wp--preset--color--border,#dedede));border-radius:var(--wp--custom--radius--md,12px);background:var(--wp--preset--color--surface,transparent)}
+.wpe-price-list.is-cards .wpe-price-list__item:is(:hover,:focus-within){box-shadow:var(--wp--preset--shadow--md,0 12px 30px rgb(0 0 0 / 10%))}
+.wpe-price-list__media{flex:0 0 var(--wpek-pl-image);max-width:40%;min-width:0}
+.wpe-price-list__image{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--wp--custom--radius--sm,8px)}
+.wpe-price-list__body{flex:1 1 0;min-width:0}
+.wpe-price-list__line{display:flex;justify-content:space-between;align-items:start;gap:12px;min-width:0}
+.wpe-price-list__details{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px;min-width:0}
+.wpe-price-list__name{font-size:1.08rem;line-height:1.4;font-weight:700;margin:0;overflow-wrap:anywhere}
+.wpe-price-list__name a{color:inherit;text-decoration:none}
+.wpe-price-list__name a:is(:hover,:focus-visible){text-decoration:underline;text-underline-offset:.2em}
+.wpe-price-list__name a:focus-visible{outline:2px solid var(--wp--preset--color--primary,currentColor);outline-offset:3px}
+.wpe-price-list__badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.72rem;line-height:1.5;font-weight:700;color:var(--wpek-pl-badge,var(--wp--preset--color--primary,currentColor));background:var(--wp--preset--color--primary-soft,rgb(0 0 0 / 6%))}
+.wpe-price-list__price{display:flex;flex:0 0 auto;align-items:baseline;flex-wrap:wrap;justify-content:end;gap:6px;color:var(--wpek-pl-price,var(--wp--preset--color--primary,currentColor));font-variant-numeric:tabular-nums;overflow-wrap:anywhere;text-align:end}
+.wpe-price-list__old{font-size:.86rem;font-weight:400;color:var(--wp--preset--color--text-muted,inherit)}
+.wpe-price-list__current{font-weight:750}
+.wpe-price-list.is-price-bottom .wpe-price-list__line{flex-direction:column;gap:6px}
+.wpe-price-list.is-price-bottom .wpe-price-list__price{justify-content:start;text-align:start}
+.wpe-price-list__description{margin:6px 0 0;line-height:1.55;color:var(--wp--preset--color--text-muted,inherit);overflow-wrap:anywhere}
+.wpe-price-list__empty{margin:0;opacity:.75}
+@media(max-width:559px){.wpe-price-list__item{gap:10px}.wpe-price-list__line{flex-wrap:wrap}.wpe-price-list__price{text-align:start;justify-content:start}.wpe-price-list__media{max-width:32%}}
+@media(prefers-reduced-motion:reduce){.wpe-price-list__item{transition:none}}

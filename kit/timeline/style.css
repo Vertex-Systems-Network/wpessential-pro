@@ -1,0 +1,18 @@
+.wpe-timeline{--wpek-timeline-gap:26px;--wpek-timeline-line:var(--wp--preset--color--border,#b6babd);--wpek-timeline-max:100%;max-width:var(--wpek-timeline-max);min-width:0;box-sizing:border-box}
+.wpe-timeline__heading{margin:0 0 22px}
+.wpe-timeline__list{display:grid;gap:var(--wpek-timeline-gap);padding:0 0 0 26px;margin:0;list-style:none;position:relative}
+.wpe-timeline__list::before{position:absolute;content:"";inset-block:0;inset-inline-start:8px;width:2px;background:var(--wpek-timeline-line)}
+.wpe-timeline__item{position:relative;padding:16px;border:1px solid var(--wp--preset--color--border,#d7d7d7);border-radius:12px;min-width:0}
+.wpe-timeline__item::before{content:"";position:absolute;inset-inline-start:-25px;inset-block-start:22px;width:14px;height:14px;border-radius:50%;background:var(--wp--preset--color--primary,currentColor);box-shadow:0 0 0 3px var(--wp--preset--color--surface,#fff)}
+.wpe-timeline__date{font-size:.84rem;opacity:.83;font-weight:650;margin:0 0 6px}
+.wpe-timeline__title{font-size:1.18rem;margin:0 0 8px}
+.wpe-timeline__content{line-height:1.6;overflow-wrap:anywhere}
+.wpe-timeline__content>:first-child{margin-top:0}
+.wpe-timeline__image{display:block;width:100%;max-height:280px;object-fit:cover;border-radius:8px;margin-bottom:12px}
+.wpe-timeline.is-alternate .wpe-timeline__item:nth-child(2n){margin-inline-start:10%}
+.wpe-timeline.is-horizontal .wpe-timeline__list{display:flex;overflow-x:auto;scroll-snap-type:x proximity;gap:var(--wpek-timeline-gap);padding:26px 0 16px;overscroll-behavior-inline:contain}
+.wpe-timeline.is-horizontal .wpe-timeline__list::before{inset-block:8px auto;inset-inline:0;width:100%;height:2px}
+.wpe-timeline.is-horizontal .wpe-timeline__item{flex:0 0 min(85%,320px);scroll-snap-align:start}
+.wpe-timeline.is-horizontal .wpe-timeline__item::before{inset-inline-start:20px;inset-block-start:-26px}
+.wpe-timeline__link:focus-visible,.wpe-timeline__list:focus-visible{outline:3px solid var(--wp--preset--color--primary,#ae7a32);outline-offset:3px}
+@media(max-width:600px){.wpe-timeline.is-alternate .wpe-timeline__item:nth-child(2n){margin-inline-start:0}}

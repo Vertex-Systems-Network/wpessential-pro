@@ -1,0 +1,224 @@
+{
+	"name": "social-feed",
+	"title": "Social Feed (WPEssential)",
+	"category": "content",
+	"description": "Curated social posts or live native WordPress post cards; no unapproved third-party scraping or background API calls.",
+	"icon": "format-gallery",
+	"elementor_icon": "eicon-instagram-gallery",
+	"keywords": [
+		"social feed",
+		"posts",
+		"instagram",
+		"curated",
+		"latest"
+	],
+	"panels": {
+		"source": "Feed source",
+		"content": "Curated posts",
+		"display": "Display",
+		"layout": "Grid style"
+	},
+	"attributes": {
+		"source": {
+			"type": "select",
+			"label": "Feed source",
+			"default": "curated",
+			"options": {
+				"curated": "Curated social posts (manual)",
+				"wp-posts": "Published WordPress posts"
+			},
+			"panel": "source"
+		},
+		"title": {
+			"type": "text",
+			"label": "Feed title",
+			"default": "Latest updates",
+			"panel": "content"
+		},
+		"items": {
+			"type": "repeater",
+			"label": "Curated social posts",
+			"title_field": "caption",
+			"default": [],
+			"panel": "content",
+			"fields": {
+				"platform": {
+					"type": "select",
+					"label": "Platform",
+					"default": "instagram",
+					"options": {
+						"instagram": "Instagram",
+						"facebook": "Facebook",
+						"linkedin": "LinkedIn",
+						"tiktok": "TikTok",
+						"youtube": "YouTube",
+						"pinterest": "Pinterest",
+						"x": "X",
+						"other": "Other"
+					}
+				},
+				"image": {
+					"type": "image",
+					"label": "Image",
+					"default": {}
+				},
+				"caption": {
+					"type": "textarea",
+					"label": "Post caption",
+					"default": ""
+				},
+				"username": {
+					"type": "text",
+					"label": "Account name",
+					"default": ""
+				},
+				"date": {
+					"type": "text",
+					"label": "Post date (YYYY-MM-DD, optional)",
+					"default": ""
+				},
+				"url": {
+					"type": "url",
+					"label": "Post URL (HTTPS)",
+					"default": ""
+				}
+			}
+		},
+		"postType": {
+			"type": "text",
+			"label": "Public WordPress post type slug",
+			"default": "post",
+			"panel": "source"
+		},
+		"postCount": {
+			"type": "range",
+			"label": "Maximum published posts",
+			"default": 6,
+			"min": 1,
+			"max": 18,
+			"step": 1,
+			"unit": "",
+			"panel": "source"
+		},
+		"showImage": {
+			"type": "toggle",
+			"label": "Show images",
+			"default": true,
+			"panel": "display"
+		},
+		"showCaption": {
+			"type": "toggle",
+			"label": "Show captions/excerpts",
+			"default": true,
+			"panel": "display"
+		},
+		"showDate": {
+			"type": "toggle",
+			"label": "Show date",
+			"default": true,
+			"panel": "display"
+		},
+		"showAccount": {
+			"type": "toggle",
+			"label": "Show account/author",
+			"default": true,
+			"panel": "display"
+		},
+		"buttonText": {
+			"type": "text",
+			"label": "Read post link label",
+			"default": "View post",
+			"panel": "display"
+		},
+		"initialVisible": {
+			"type": "range",
+			"label": "Initially displayed cards (JS)",
+			"default": 6,
+			"min": 1,
+			"max": 18,
+			"step": 1,
+			"unit": "",
+			"panel": "display"
+		},
+		"loadMoreText": {
+			"type": "text",
+			"label": "Load more button",
+			"default": "Show more",
+			"panel": "display"
+		},
+		"columns": {
+			"type": "range",
+			"label": "Columns",
+			"default": "",
+			"min": 1,
+			"max": 6,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-feed-cols",
+			"panel": "layout"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Card spacing",
+			"default": "",
+			"min": 0,
+			"max": 72,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-feed-gap",
+			"panel": "layout"
+		},
+		"ratio": {
+			"type": "select",
+			"label": "Image aspect ratio",
+			"default": "1/1",
+			"options": {
+				"1/1": "Square",
+				"4/3": "Landscape",
+				"3/4": "Portrait"
+			},
+			"css": "--wpek-feed-ratio",
+			"responsive": true,
+			"panel": "layout"
+		},
+		"style": {
+			"type": "select",
+			"label": "Card style",
+			"default": "boxed",
+			"options": {
+				"boxed": "Boxed",
+				"minimal": "Minimal"
+			},
+			"panel": "layout"
+		}
+	},
+	"groups": {
+		"background": {
+			"type": "background",
+			"label": "Card background",
+			"selector": ".wpe-social-feed__card",
+			"panel": "layout"
+		},
+		"border": {
+			"type": "border",
+			"label": "Card border",
+			"selector": ".wpe-social-feed__card",
+			"panel": "layout"
+		},
+		"padding": {
+			"type": "spacing",
+			"label": "Card padding",
+			"prop": "padding",
+			"selector": ".wpe-social-feed__card",
+			"panel": "layout"
+		},
+		"captionTypography": {
+			"type": "typography",
+			"label": "Caption typography",
+			"selector": ".wpe-social-feed__caption",
+			"panel": "layout"
+		}
+	}
+}

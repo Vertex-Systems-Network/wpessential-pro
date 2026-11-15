@@ -1,0 +1,185 @@
+{
+	"name": "business-hours",
+	"title": "Business Hours (WPEssential)",
+	"category": "content",
+	"description": "Seven-day hours schedule with site timezone, closed-day support, strict clock validation and optional highlight of current weekday.",
+	"icon": "clock",
+	"elementor_icon": "eicon-time-line",
+	"keywords": [
+		"opening hours",
+		"schedule",
+		"business",
+		"weekdays"
+	],
+	"panels": {
+		"content": "Hours",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"title": {
+			"type": "text",
+			"label": "Hours heading",
+			"default": "Opening hours",
+			"panel": "content"
+		},
+		"rows": {
+			"type": "repeater",
+			"label": "Opening hours",
+			"title_field": "day",
+			"default": [
+				{
+					"day": "monday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "tuesday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "wednesday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "thursday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "friday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "saturday",
+					"closed": false,
+					"open": "09:00",
+					"close": "17:00"
+				},
+				{
+					"day": "sunday",
+					"closed": true,
+					"open": "09:00",
+					"close": "17:00"
+				}
+			],
+			"panel": "content",
+			"fields": {
+				"day": {
+					"type": "select",
+					"label": "Weekday",
+					"default": "monday",
+					"options": {
+						"monday": "Monday",
+						"tuesday": "Tuesday",
+						"wednesday": "Wednesday",
+						"thursday": "Thursday",
+						"friday": "Friday",
+						"saturday": "Saturday",
+						"sunday": "Sunday"
+					}
+				},
+				"closed": {
+					"type": "toggle",
+					"label": "Closed today",
+					"default": false
+				},
+				"open": {
+					"type": "text",
+					"label": "Opening time (HH:MM)",
+					"default": "09:00"
+				},
+				"close": {
+					"type": "text",
+					"label": "Closing time (HH:MM)",
+					"default": "17:00"
+				}
+			}
+		},
+		"closedText": {
+			"type": "text",
+			"label": "Closed label",
+			"default": "Closed",
+			"panel": "content"
+		},
+		"showToday": {
+			"type": "toggle",
+			"label": "Highlight current day (site timezone)",
+			"default": true,
+			"panel": "style"
+		},
+		"showTimezone": {
+			"type": "toggle",
+			"label": "Show site timezone",
+			"default": true,
+			"panel": "style"
+		},
+		"layout": {
+			"type": "select",
+			"label": "Hours layout",
+			"default": "list",
+			"options": {
+				"list": "Lines",
+				"table": "Table"
+			},
+			"panel": "style"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Maximum width",
+			"default": "",
+			"min": 220,
+			"max": 900,
+			"step": 10,
+			"unit": "px",
+			"css": "--wpek-hours-max",
+			"responsive": true,
+			"panel": "style"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Row spacing",
+			"default": "",
+			"min": 0,
+			"max": 30,
+			"step": 1,
+			"unit": "px",
+			"css": "--wpek-hours-gap",
+			"responsive": true,
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"background": {
+			"type": "background",
+			"label": "Hours background",
+			"selector": ".wpe-business-hours",
+			"panel": "style"
+		},
+		"border": {
+			"type": "border",
+			"label": "Hours border",
+			"selector": ".wpe-business-hours",
+			"panel": "style"
+		},
+		"daysTypography": {
+			"type": "typography",
+			"label": "Weekday typography",
+			"selector": ".wpe-business-hours__day",
+			"panel": "style"
+		},
+		"timeTypography": {
+			"type": "typography",
+			"label": "Opening time typography",
+			"selector": ".wpe-business-hours__time",
+			"panel": "style"
+		}
+	}
+}

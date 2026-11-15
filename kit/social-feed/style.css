@@ -1,0 +1,17 @@
+.wpe-social-feed{--wpek-feed-cols:3;--wpek-feed-gap:20px;--wpek-feed-ratio:1/1;min-width:0}
+.wpe-social-feed__heading{margin:0 0 22px}
+.wpe-social-feed__grid{display:grid;grid-template-columns:repeat(var(--wpek-feed-cols),minmax(0,1fr));gap:var(--wpek-feed-gap)}
+.wpe-social-feed__card{min-width:0;overflow:hidden;display:flex;flex-direction:column}
+.wpe-social-feed.is-boxed .wpe-social-feed__card{border:1px solid var(--wp--preset--color--border,#d2d4d6);border-radius:12px}
+.wpe-social-feed__image{display:block;width:100%;height:auto;aspect-ratio:var(--wpek-feed-ratio);object-fit:cover}
+.wpe-social-feed__body{padding:16px;display:flex;flex-direction:column;gap:9px;min-width:0;overflow-wrap:anywhere}
+.wpe-social-feed__platform{margin:0;font-weight:750;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+.wpe-social-feed__title{margin:0;font-size:1.1rem}
+.wpe-social-feed__account,.wpe-social-feed__caption{margin:0;line-height:1.55}
+.wpe-social-feed__account,.wpe-social-feed time{font-size:.85rem;opacity:.8}
+.wpe-social-feed__link{margin-top:auto;text-decoration:underline;text-underline-offset:3px}
+.wpe-social-feed__more{display:block;margin:22px auto 0;cursor:pointer;border:1px solid currentColor;border-radius:8px;background:transparent;color:inherit;padding:12px 20px;font:inherit}
+.wpe-social-feed__more[hidden],.wpe-social-feed__card[hidden]{display:none!important}
+.wpe-social-feed__more:focus-visible,.wpe-social-feed__link:focus-visible{outline:3px solid var(--wp--preset--color--primary,#a9772d);outline-offset:3px}
+@media(max-width:800px){.wpe-social-feed__grid{grid-template-columns:repeat(min(2,var(--wpek-feed-cols)),minmax(0,1fr))}}
+@media(max-width:480px){.wpe-social-feed__grid{grid-template-columns:1fr}}

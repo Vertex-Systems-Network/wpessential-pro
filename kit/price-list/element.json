@@ -1,0 +1,306 @@
+{
+	"name": "price-list",
+	"title": "Price List / Restaurant Menu (WPEssential)",
+	"category": "content",
+	"description": "Accessible repeatable product, service or restaurant price list with image, descriptions, old prices, badges, safe links and responsive layouts.",
+	"icon": "list-view",
+	"elementor_icon": "eicon-price-list",
+	"keywords": [
+		"price list",
+		"menu",
+		"services",
+		"restaurant",
+		"food",
+		"pricing"
+	],
+	"panels": {
+		"content": "Menu content",
+		"layout": "Layout",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"title": {
+			"type": "text",
+			"label": "List heading (optional)",
+			"default": "Our menu",
+			"panel": "content"
+		},
+		"titleTag": {
+			"type": "select",
+			"label": "Heading HTML tag",
+			"default": "h2",
+			"options": {
+				"h2": "H2",
+				"h3": "H3",
+				"h4": "H4",
+				"h5": "H5",
+				"h6": "H6",
+				"p": "Paragraph"
+			},
+			"panel": "content"
+		},
+		"items": {
+			"type": "repeater",
+			"label": "Menu / price items",
+			"title_field": "title",
+			"panel": "content",
+			"default": [
+				{
+					"title": "House special",
+					"description": "Fresh ingredients, made to order.",
+					"price": "18",
+					"badge": "Popular"
+				},
+				{
+					"title": "Seasonal selection",
+					"description": "A changing favourite from our kitchen.",
+					"price": "16"
+				}
+			],
+			"fields": {
+				"title": {
+					"type": "text",
+					"label": "Item name",
+					"default": "New item"
+				},
+				"description": {
+					"type": "textarea",
+					"label": "Short description",
+					"default": ""
+				},
+				"price": {
+					"type": "text",
+					"label": "Current price (display text)",
+					"default": ""
+				},
+				"oldPrice": {
+					"type": "text",
+					"label": "Old price (optional)",
+					"default": ""
+				},
+				"badge": {
+					"type": "text",
+					"label": "Badge / dietary label",
+					"default": ""
+				},
+				"image": {
+					"type": "image",
+					"label": "Optional item image",
+					"default": {}
+				},
+				"imageAlt": {
+					"type": "text",
+					"label": "Image alt text (blank for decorative)",
+					"default": ""
+				},
+				"link": {
+					"type": "url",
+					"label": "Item detail URL",
+					"default": ""
+				},
+				"newTab": {
+					"type": "toggle",
+					"label": "Open detail in new tab",
+					"default": false
+				}
+			}
+		},
+		"currency": {
+			"type": "text",
+			"label": "Currency prefix",
+			"default": "$",
+			"panel": "content"
+		},
+		"priceSuffix": {
+			"type": "text",
+			"label": "Price suffix (optional)",
+			"default": "",
+			"panel": "content"
+		},
+		"emptyText": {
+			"type": "text",
+			"label": "Empty-list message",
+			"default": "No items are available right now.",
+			"panel": "content"
+		},
+		"layout": {
+			"type": "select",
+			"label": "Menu presentation",
+			"default": "rows",
+			"options": {
+				"rows": "Divided rows",
+				"cards": "Cards",
+				"minimal": "Minimal rows"
+			},
+			"panel": "layout"
+		},
+		"showImages": {
+			"type": "toggle",
+			"label": "Show item images",
+			"default": true,
+			"panel": "layout"
+		},
+		"showDescriptions": {
+			"type": "toggle",
+			"label": "Show descriptions",
+			"default": true,
+			"panel": "layout"
+		},
+		"showBadges": {
+			"type": "toggle",
+			"label": "Show badges",
+			"default": true,
+			"panel": "layout"
+		},
+		"columns": {
+			"type": "range",
+			"label": "Columns",
+			"default": "",
+			"min": 1,
+			"max": 4,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-pl-columns",
+			"panel": "layout"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Space between items",
+			"default": "",
+			"min": 0,
+			"max": 90,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-pl-gap",
+			"panel": "layout"
+		},
+		"imageSize": {
+			"type": "range",
+			"label": "Image width",
+			"default": "",
+			"min": 40,
+			"max": 220,
+			"step": 2,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-pl-image",
+			"panel": "layout"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Max list width",
+			"default": "",
+			"min": 320,
+			"max": 1800,
+			"step": 10,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-pl-max",
+			"panel": "layout"
+		},
+		"priceAlign": {
+			"type": "select",
+			"label": "Price position",
+			"default": "end",
+			"options": {
+				"end": "Opposite item name",
+				"bottom": "Below description"
+			},
+			"panel": "layout"
+		},
+		"dividerColor": {
+			"type": "color",
+			"label": "Divider colour",
+			"default": "",
+			"css": "--wpek-pl-divider",
+			"panel": "style"
+		},
+		"priceColor": {
+			"type": "color",
+			"label": "Price colour",
+			"default": "",
+			"css": "--wpek-pl-price",
+			"panel": "style"
+		},
+		"badgeColor": {
+			"type": "color",
+			"label": "Badge colour",
+			"default": "",
+			"css": "--wpek-pl-badge",
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"itemBackground": {
+			"type": "background",
+			"label": "Item background",
+			"selector": ".wpe-price-list__item",
+			"panel": "style"
+		},
+		"itemBorder": {
+			"type": "border",
+			"label": "Item border and radius",
+			"selector": ".wpe-price-list__item",
+			"panel": "style"
+		},
+		"itemPadding": {
+			"type": "spacing",
+			"label": "Item padding",
+			"selector": ".wpe-price-list__item",
+			"prop": "padding",
+			"panel": "style"
+		},
+		"itemShadow": {
+			"type": "shadow",
+			"label": "Item shadow",
+			"selector": ".wpe-price-list__item",
+			"panel": "style"
+		},
+		"headingTypography": {
+			"type": "typography",
+			"label": "List heading typography",
+			"selector": ".wpe-price-list__heading",
+			"panel": "style"
+		},
+		"nameTypography": {
+			"type": "typography",
+			"label": "Item name typography",
+			"selector": ".wpe-price-list__name",
+			"panel": "style"
+		},
+		"descriptionTypography": {
+			"type": "typography",
+			"label": "Description typography",
+			"selector": ".wpe-price-list__description",
+			"panel": "style"
+		},
+		"priceTypography": {
+			"type": "typography",
+			"label": "Price typography",
+			"selector": ".wpe-price-list__price",
+			"panel": "style"
+		},
+		"nameColor": {
+			"type": "colors",
+			"label": "Item name colour",
+			"selector": ".wpe-price-list__name",
+			"prop": "color",
+			"panel": "style"
+		},
+		"descriptionColor": {
+			"type": "colors",
+			"label": "Description colour",
+			"selector": ".wpe-price-list__description",
+			"prop": "color",
+			"panel": "style"
+		},
+		"imageBorder": {
+			"type": "border",
+			"label": "Image border/radius",
+			"selector": ".wpe-price-list__image",
+			"panel": "style"
+		}
+	}
+}

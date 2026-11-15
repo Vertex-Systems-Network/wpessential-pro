@@ -1,0 +1,39 @@
+/* WPForms Lite theme-aware presentation. */
+.wpe-forms{--wpek-form-width:760px;--wpek-form-gap:18px;max-width:var(--wpek-form-width);min-width:0}
+.wpe-forms__heading{margin:0 0 22px;line-height:1.3}
+.wpe-forms__body{min-width:0}
+/* WPForms sets its own dark-agnostic text variables. Bind them to the active theme scheme. */
+.wpe-forms{
+	--wpforms-label-color:var(--wp--preset--color--text,currentColor);
+	--wpforms-label-sublabel-color:var(--wp--preset--color--text-muted,currentColor);
+	--wpforms-field-text-color:var(--wp--preset--color--text,currentColor);
+	--wpforms-field-background-color:var(--wp--preset--color--surface,transparent);
+	--wpforms-field-border-color:var(--wp--preset--color--border,currentColor);
+	--wpforms-button-background-color:var(--wp--preset--color--primary,currentColor);
+	--wpforms-button-text-color:var(--wp--preset--color--on-primary,#fff);
+}
+.wpe-forms .wpforms-container :is(.wpforms-field-label,.wpforms-field-label-inline,.wpforms-field-sublabel,.wpforms-field-description,.wpforms-description){
+	color:var(--wp--preset--color--text,currentColor)!important;
+}
+.wpe-forms .wpforms-container :is(input:not([type=checkbox]):not([type=radio]),textarea,select){
+	color:var(--wp--preset--color--text,currentColor);
+	background-color:var(--wp--preset--color--surface,transparent);
+	border-color:var(--wp--preset--color--border,currentColor);
+}
+
+.wpe-forms .wpforms-container .wpforms-field{padding-block:calc(var(--wpek-form-gap) / 2)}
+.wpe-forms .wpforms-field input:not([type=checkbox]):not([type=radio]),.wpe-forms .wpforms-field textarea,.wpe-forms .wpforms-field select{max-width:100%;box-sizing:border-box;border-radius:7px}
+.wpe-forms :is(input,textarea,select,button):focus-visible{outline:2px solid var(--wp--preset--color--primary,currentColor);outline-offset:2px}
+.wpe-forms .wpforms-submit{background:var(--wp--preset--color--primary,#235c55);color:var(--wp--preset--color--surface,#fff);padding:12px 22px;border-radius:7px;cursor:pointer}
+.wpe-forms.is-cols-2 .wpforms-field-container{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--wpek-form-gap)}
+.wpe-forms.is-cols-2 .wpforms-field-container>.wpforms-field-textarea,.wpe-forms.is-cols-2 .wpforms-field-container>.wpforms-field-html,.wpe-forms.is-cols-2 .wpforms-field-container>.wpforms-field-checkbox{grid-column:1/-1}
+@media(max-width:767px){.wpe-forms.is-cols-2 .wpforms-field-container{grid-template-columns:1fr}}
+
+/* WPForms injects its own label colors; its local variables can override the theme.
+   Force readable scheme colors on visible label and description text. */
+:root[data-wpe-scheme="dark"] body .wpe-forms .wpforms-container :is(label,.wpforms-field-label,.wpforms-field-label-inline,.wpforms-field-sublabel,.wpforms-field-description,.wpforms-description){
+	color:var(--wp--preset--color--text,#E7EAF3)!important;
+}
+:root[data-wpe-scheme="dark"] body .wpe-forms .wpforms-container :is(input,textarea,select){
+	color:var(--wp--preset--color--text,#E7EAF3)!important;
+}

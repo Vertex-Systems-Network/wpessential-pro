@@ -1,0 +1,125 @@
+{
+	"name": "map",
+	"title": "Privacy-first Map (WPEssential)",
+	"category": "media",
+	"description": "Validated coordinates, link to OpenStreetMap, and optional click-to-load interactive map without third-party requests until consent.",
+	"icon": "location-alt",
+	"elementor_icon": "eicon-google-maps",
+	"keywords": [
+		"map",
+		"location",
+		"address",
+		"directions",
+		"openstreetmap"
+	],
+	"panels": {
+		"content": "Content",
+		"location": "Location",
+		"privacy": "Privacy",
+		"style": "Style"
+	},
+	"attributes": {
+		"title": {
+			"type": "text",
+			"label": "Accessible map title",
+			"default": "Our location",
+			"panel": "content"
+		},
+		"address": {
+			"type": "textarea",
+			"label": "Address shown to visitors",
+			"default": "",
+			"panel": "content"
+		},
+		"latitude": {
+			"type": "text",
+			"label": "Latitude (-90 to 90)",
+			"default": "40.7128",
+			"panel": "location"
+		},
+		"longitude": {
+			"type": "text",
+			"label": "Longitude (-180 to 180)",
+			"default": "-74.0060",
+			"panel": "location"
+		},
+		"zoom": {
+			"type": "range",
+			"label": "Map zoom",
+			"default": 14,
+			"min": 2,
+			"max": 18,
+			"step": 1,
+			"unit": "",
+			"panel": "location"
+		},
+		"embed": {
+			"type": "toggle",
+			"label": "Enable interactive map after user click",
+			"default": true,
+			"panel": "privacy"
+		},
+		"consent": {
+			"type": "text",
+			"label": "Interactive map consent button text",
+			"default": "Load interactive map",
+			"panel": "privacy"
+		},
+		"privacyNote": {
+			"type": "text",
+			"label": "Third-party privacy note",
+			"default": "Loading the map connects to OpenStreetMap.",
+			"panel": "privacy"
+		},
+		"linkLabel": {
+			"type": "text",
+			"label": "Open map link text",
+			"default": "Open directions",
+			"panel": "content"
+		},
+		"height": {
+			"type": "range",
+			"label": "Map height",
+			"default": "",
+			"min": 200,
+			"max": 850,
+			"step": 10,
+			"unit": "px",
+			"css": "--wpek-map-height",
+			"responsive": true,
+			"panel": "style"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Maximum width",
+			"default": "",
+			"min": 300,
+			"max": 1800,
+			"step": 10,
+			"unit": "px",
+			"css": "--wpek-map-max",
+			"responsive": true,
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"frameBorder": {
+			"type": "border",
+			"selector": ".wpe-map__frame",
+			"label": "Map border and radius",
+			"panel": "style"
+		},
+		"frameShadow": {
+			"type": "shadow",
+			"selector": ".wpe-map__frame",
+			"label": "Map shadow",
+			"panel": "style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"selector": ".wpe-map__title",
+			"label": "Title typography",
+			"panel": "style"
+		}
+	}
+}

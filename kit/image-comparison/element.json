@@ -1,0 +1,124 @@
+{
+	"name": "image-comparison",
+	"title": "Image Comparison (WPEssential)",
+	"category": "media",
+	"description": "Before/after image reveal with accessible keyboard range slider and static no-JS 50/50 comparison.",
+	"icon": "images-alt2",
+	"elementor_icon": "eicon-image-before-after",
+	"keywords": [
+		"image comparison",
+		"before after",
+		"slider",
+		"difference"
+	],
+	"panels": {
+		"content": "Before and after",
+		"behavior": "Slider",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"before": {
+			"type": "image",
+			"label": "Before image",
+			"default": {},
+			"panel": "content"
+		},
+		"after": {
+			"type": "image",
+			"label": "After image",
+			"default": {},
+			"panel": "content"
+		},
+		"beforeLabel": {
+			"type": "text",
+			"label": "Before image label",
+			"default": "Before",
+			"panel": "content"
+		},
+		"afterLabel": {
+			"type": "text",
+			"label": "After image label",
+			"default": "After",
+			"panel": "content"
+		},
+		"beforeAlt": {
+			"type": "text",
+			"label": "Before image alt text",
+			"default": "Before comparison image",
+			"panel": "content"
+		},
+		"afterAlt": {
+			"type": "text",
+			"label": "After image alt text",
+			"default": "After comparison image",
+			"panel": "content"
+		},
+		"caption": {
+			"type": "text",
+			"label": "Description below comparison",
+			"default": "",
+			"panel": "content"
+		},
+		"start": {
+			"type": "range",
+			"label": "Initial reveal percent",
+			"default": 50,
+			"min": 5,
+			"max": 95,
+			"step": 1,
+			"unit": "",
+			"panel": "behavior"
+		},
+		"height": {
+			"type": "range",
+			"label": "Comparison height",
+			"default": "",
+			"min": 180,
+			"max": 900,
+			"step": 10,
+			"unit": "px",
+			"css": "--wpek-compare-height",
+			"responsive": true,
+			"panel": "style"
+		},
+		"radius": {
+			"type": "range",
+			"label": "Border radius",
+			"default": "",
+			"min": 0,
+			"max": 50,
+			"step": 1,
+			"unit": "px",
+			"css": "--wpek-compare-radius",
+			"responsive": true,
+			"panel": "style"
+		},
+		"dividerColor": {
+			"type": "color",
+			"label": "Divider color",
+			"default": "",
+			"css": "--wpek-compare-line",
+			"panel": "style"
+		},
+		"overlayLabels": {
+			"type": "toggle",
+			"label": "Show labels on images",
+			"default": true,
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"frameBorder": {
+			"type": "border",
+			"selector": ".wpe-image-comparison__frame",
+			"label": "Image frame border",
+			"panel": "style"
+		},
+		"captionTypography": {
+			"type": "typography",
+			"selector": ".wpe-image-comparison__caption",
+			"label": "Caption typography",
+			"panel": "style"
+		}
+	}
+}

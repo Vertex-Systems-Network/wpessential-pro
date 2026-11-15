@@ -1,0 +1,22 @@
+/* WPEssential server-rendered accessible charts. */
+.wpe-chart{--wpek-chart-height:230px;--wpek-chart-gap:15px;--wpek-chart-thickness:22px;min-width:0}
+.wpe-chart__title{font-size:1.35rem;font-weight:700;margin:0 0 20px}
+.wpe-chart__series{list-style:none;display:grid;gap:var(--wpek-chart-gap);padding:0;margin:0}
+.wpe-chart__item{display:grid;gap:7px;min-width:0}
+.wpe-chart__meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.wpe-chart__label{font-weight:650;overflow-wrap:anywhere}
+.wpe-chart__value{font-variant-numeric:tabular-nums}
+.wpe-chart__track{height:var(--wpek-chart-thickness);border-radius:99px;overflow:hidden;background:var(--wp--preset--color--border,rgb(0 0 0 / 8%))}
+.wpe-chart__bar{display:block;width:var(--wpek-chart-pct);height:100%;background:var(--wpek-chart-color);border-radius:inherit}
+.wpe-chart.is-columns .wpe-chart__series{display:flex;gap:var(--wpek-chart-gap);min-height:var(--wpek-chart-height)}
+.wpe-chart.is-columns .wpe-chart__item{flex:1 1 0;min-width:0;display:flex;flex-direction:column-reverse;justify-content:end}
+.wpe-chart.is-columns .wpe-chart__track{height:var(--wpek-chart-height);display:flex;align-items:flex-end;border-radius:6px}
+.wpe-chart.is-columns .wpe-chart__bar{height:var(--wpek-chart-pct);width:100%;border-radius:6px 6px 0 0}
+.wpe-chart.is-columns .wpe-chart__meta{flex-direction:column;text-align:center;justify-content:start}
+.wpe-chart__donut{display:grid;place-items:center;position:relative;max-width:300px;margin:0 auto 24px}
+.wpe-chart__donut svg{display:block;width:100%;height:auto;aspect-ratio:1}
+.wpe-chart__total{position:absolute;font-size:1.4rem;font-variant-numeric:tabular-nums}
+.wpe-chart.is-donut .wpe-chart__series{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.wpe-chart.is-donut .wpe-chart__item{border-inline-start:4px solid var(--wpek-chart-color);padding-inline-start:12px}
+@media(max-width:560px){.wpe-chart.is-columns .wpe-chart__series{gap:6px}.wpe-chart.is-columns .wpe-chart__label{font-size:.75rem}}
+@media(prefers-reduced-motion:reduce){.wpe-chart *{transition:none!important}}
