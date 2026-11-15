@@ -122,6 +122,7 @@ $moduleClasses = [
     \WPEssential\Modules\Emails\EmailsModule::class,
     \WPEssential\Modules\Chat\ChatModule::class,
     \WPEssential\Modules\SiteKit\SiteKitModule::class,
+    \WPEssential\Modules\ProKit\ProKitModule::class,
 ];
 
 $moduleFileForClass = static function (string $class): ?string {

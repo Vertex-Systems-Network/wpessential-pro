@@ -1,0 +1,259 @@
+{
+	"name": "tooltip",
+	"title": "Interactive / Tooltip (WPEssential)",
+	"category": "content",
+	"description": "Accessible tooltip, native show-more disclosure and keyboard-operated two-panel content switcher. No-JavaScript fallbacks and responsive controls.",
+	"icon": "info",
+	"elementor_icon": "eicon-info-circle",
+	"keywords": [
+		"tooltip",
+		"popover",
+		"show more",
+		"disclosure",
+		"switcher",
+		"toggle",
+		"interactive"
+	],
+	"panels": {
+		"content": "Content",
+		"switcher": "Switcher",
+		"style": "Style",
+		"tooltip_style": "Tooltip appearance"
+	},
+	"attributes": {
+		"mode": {
+			"type": "select",
+			"panel": "content",
+			"label": "Interactive content type",
+			"default": "tooltip",
+			"options": {
+				"tooltip": "Tooltip / info popover",
+				"showmore": "Show more / disclosure",
+				"switcher": "Two-panel content switcher"
+			}
+		},
+		"trigger": {
+			"type": "text",
+			"panel": "content",
+			"label": "Tooltip button text",
+			"default": "What's included?"
+		},
+		"tipText": {
+			"type": "textarea",
+			"panel": "content",
+			"label": "Tooltip information (plain text)",
+			"default": "Every plan includes responsive designs and dedicated support."
+		},
+		"position": {
+			"type": "select",
+			"panel": "tooltip_style",
+			"label": "Tooltip placement",
+			"default": "top",
+			"options": {
+				"top": "Above",
+				"bottom": "Below",
+				"start": "Start",
+				"end": "End"
+			}
+		},
+		"tooltipWidth": {
+			"type": "range",
+			"panel": "tooltip_style",
+			"label": "Tooltip maximum width",
+			"responsive": true,
+			"css": "--wpek-tip-width",
+			"default": "",
+			"min": 120,
+			"max": 440,
+			"step": 10,
+			"unit": "px"
+		},
+		"summary": {
+			"type": "html",
+			"panel": "content",
+			"label": "Preview / introductory content",
+			"default": "<p>Explore the key benefits of our service.</p>"
+		},
+		"expandedContent": {
+			"type": "html",
+			"panel": "content",
+			"label": "More content",
+			"default": "<p>Detailed features, flexible options, and personal support are included.</p>"
+		},
+		"moreLabel": {
+			"type": "text",
+			"panel": "content",
+			"label": "Show more button text",
+			"default": "Show more"
+		},
+		"lessLabel": {
+			"type": "text",
+			"panel": "content",
+			"label": "Show less button text",
+			"default": "Show less"
+		},
+		"expanded": {
+			"type": "toggle",
+			"panel": "content",
+			"label": "Show more open initially",
+			"default": false
+		},
+		"firstTitle": {
+			"type": "text",
+			"panel": "switcher",
+			"label": "First tab label",
+			"default": "Monthly"
+		},
+		"firstContent": {
+			"type": "html",
+			"panel": "switcher",
+			"label": "First tab content",
+			"default": "<p>Flexible monthly subscription.</p>"
+		},
+		"secondTitle": {
+			"type": "text",
+			"panel": "switcher",
+			"label": "Second tab label",
+			"default": "Yearly"
+		},
+		"secondContent": {
+			"type": "html",
+			"panel": "switcher",
+			"label": "Second tab content",
+			"default": "<p>Save with an annual subscription.</p>"
+		},
+		"defaultTab": {
+			"type": "select",
+			"panel": "switcher",
+			"label": "Initially selected tab",
+			"default": "first",
+			"options": {
+				"first": "First tab",
+				"second": "Second tab"
+			}
+		},
+		"align": {
+			"type": "select",
+			"panel": "style",
+			"label": "Alignment",
+			"default": "start",
+			"options": {
+				"start": "Start",
+				"center": "Center",
+				"end": "End"
+			},
+			"responsive": true,
+			"css": "--wpek-interactive-align",
+			"map": {
+				"start": "--wpek-interactive-align:flex-start;--wpek-interactive-margin:0 auto 0 0",
+				"center": "--wpek-interactive-align:center;--wpek-interactive-margin:0 auto",
+				"end": "--wpek-interactive-align:flex-end;--wpek-interactive-margin:0 0 0 auto"
+			}
+		},
+		"maxWidth": {
+			"type": "range",
+			"panel": "style",
+			"label": "Maximum width",
+			"responsive": true,
+			"css": "--wpek-interactive-max",
+			"default": "",
+			"min": 180,
+			"max": 1500,
+			"step": 10,
+			"unit": "px"
+		},
+		"gap": {
+			"type": "range",
+			"panel": "style",
+			"label": "Spacing",
+			"responsive": true,
+			"css": "--wpek-interactive-gap",
+			"default": "",
+			"min": 0,
+			"max": 80,
+			"step": 1,
+			"unit": "px"
+		},
+		"style": {
+			"type": "select",
+			"panel": "style",
+			"label": "Visual preset",
+			"default": "minimal",
+			"options": {
+				"minimal": "Minimal",
+				"boxed": "Boxed",
+				"accent": "Accent"
+			}
+		},
+		"hover": {
+			"type": "select",
+			"panel": "style",
+			"label": "Hover effect",
+			"default": "none",
+			"options": {
+				"none": "None",
+				"lift": "Lift",
+				"highlight": "Highlight"
+			}
+		}
+	},
+	"groups": {
+		"boxPadding": {
+			"type": "spacing",
+			"label": "Content padding",
+			"prop": "padding",
+			"selector": ".wpe-tooltip__body",
+			"panel": "style"
+		},
+		"boxBackground": {
+			"type": "background",
+			"label": "Content background",
+			"selector": ".wpe-tooltip__body",
+			"panel": "style"
+		},
+		"boxBorder": {
+			"type": "border",
+			"label": "Content border and radius",
+			"selector": ".wpe-tooltip__body",
+			"panel": "style"
+		},
+		"bodyTypography": {
+			"type": "typography",
+			"label": "Body typography",
+			"selector": ".wpe-tooltip__body",
+			"panel": "style"
+		},
+		"bodyColor": {
+			"type": "colors",
+			"label": "Body text color",
+			"prop": "color",
+			"selector": ".wpe-tooltip__body",
+			"panel": "style"
+		},
+		"tipBackground": {
+			"type": "background",
+			"label": "Tooltip background",
+			"selector": ".wpe-tooltip__bubble",
+			"panel": "tooltip_style"
+		},
+		"tipBorder": {
+			"type": "border",
+			"label": "Tooltip border",
+			"selector": ".wpe-tooltip__bubble",
+			"panel": "tooltip_style"
+		},
+		"tipTextColor": {
+			"type": "colors",
+			"label": "Tooltip text color",
+			"selector": ".wpe-tooltip__bubble",
+			"prop": "color",
+			"panel": "tooltip_style"
+		},
+		"tipTypography": {
+			"type": "typography",
+			"label": "Tooltip typography",
+			"selector": ".wpe-tooltip__bubble",
+			"panel": "tooltip_style"
+		}
+	}
+}

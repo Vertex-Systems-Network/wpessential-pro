@@ -1,0 +1,380 @@
+{
+	"name": "posts-grid",
+	"title": "Posts Grid (WPEssential)",
+	"category": "content",
+	"description": "Dynamic posts, pages and public custom post types in a responsive grid with term filters, metadata and accessible pagination.",
+	"icon": "grid-view",
+	"elementor_icon": "eicon-post-list",
+	"keywords": [
+		"posts grid",
+		"blog",
+		"news",
+		"archive",
+		"portfolio",
+		"case studies",
+		"post list"
+	],
+	"panels": {
+		"query": "Query",
+		"display": "Content",
+		"layout": "Grid layout",
+		"cards": "Cards",
+		"media": "Image",
+		"text_style": "Typography"
+	},
+	"attributes": {
+		"postType": {
+			"type": "text",
+			"panel": "query",
+			"label": "Public post type slug (e.g. post, page, product)",
+			"default": "post"
+		},
+		"taxonomy": {
+			"type": "text",
+			"panel": "query",
+			"label": "Filter taxonomy slug (optional)",
+			"default": "category"
+		},
+		"terms": {
+			"type": "text",
+			"panel": "query",
+			"label": "Term slugs, separated by commas (optional)",
+			"default": ""
+		},
+		"postsPerPage": {
+			"type": "range",
+			"panel": "query",
+			"label": "Posts per page",
+			"unit": "px",
+			"min": 1,
+			"max": 24,
+			"step": 1,
+			"default": 6
+		},
+		"offset": {
+			"type": "range",
+			"panel": "query",
+			"label": "Skip first N posts",
+			"unit": "px",
+			"min": 0,
+			"max": 100,
+			"step": 1,
+			"default": 0
+		},
+		"orderBy": {
+			"type": "select",
+			"panel": "query",
+			"label": "Order by",
+			"default": "date",
+			"options": {
+				"date": "Published date",
+				"modified": "Modified date",
+				"title": "Title",
+				"menu_order": "Menu order",
+				"comment_count": "Comment count"
+			}
+		},
+		"order": {
+			"type": "select",
+			"panel": "query",
+			"label": "Order",
+			"default": "DESC",
+			"options": {
+				"DESC": "Descending",
+				"ASC": "Ascending"
+			}
+		},
+		"excludeCurrent": {
+			"type": "toggle",
+			"panel": "query",
+			"label": "Exclude current post",
+			"default": true
+		},
+		"showPagination": {
+			"type": "toggle",
+			"panel": "query",
+			"label": "Show numbered pagination",
+			"default": true
+		},
+		"showImage": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Featured image",
+			"default": true
+		},
+		"imageSize": {
+			"type": "select",
+			"panel": "media",
+			"label": "Image size",
+			"default": "large",
+			"options": {
+				"medium": "Medium",
+				"medium_large": "Medium large",
+				"large": "Large",
+				"full": "Full"
+			}
+		},
+		"imageRatio": {
+			"type": "select",
+			"panel": "media",
+			"label": "Image ratio",
+			"default": "4/3",
+			"options": {
+				"16/9": "16:9",
+				"4/3": "4:3",
+				"1/1": "Square",
+				"3/4": "Portrait"
+			},
+			"css": "--wpek-image-ratio",
+			"responsive": true
+		},
+		"imageFit": {
+			"type": "select",
+			"panel": "media",
+			"label": "Image fit",
+			"default": "cover",
+			"options": {
+				"cover": "Cover",
+				"contain": "Contain"
+			},
+			"css": "--wpek-image-fit",
+			"responsive": true
+		},
+		"showTaxonomy": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Show primary category / term",
+			"default": true
+		},
+		"showDate": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Show date",
+			"default": true
+		},
+		"showAuthor": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Show author",
+			"default": false
+		},
+		"showExcerpt": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Show excerpt",
+			"default": true
+		},
+		"excerptWords": {
+			"type": "range",
+			"panel": "display",
+			"label": "Excerpt length (words)",
+			"unit": "px",
+			"min": 5,
+			"max": 80,
+			"step": 1,
+			"default": 22
+		},
+		"showReadMore": {
+			"type": "toggle",
+			"panel": "display",
+			"label": "Show read more link",
+			"default": true
+		},
+		"readMoreText": {
+			"type": "text",
+			"panel": "display",
+			"label": "Read more link text",
+			"default": "Read article"
+		},
+		"titleTag": {
+			"type": "select",
+			"panel": "text_style",
+			"label": "Post title HTML tag",
+			"default": "h3",
+			"options": {
+				"h2": "H2",
+				"h3": "H3",
+				"h4": "H4",
+				"p": "Paragraph"
+			}
+		},
+		"columns": {
+			"type": "range",
+			"panel": "layout",
+			"label": "Columns",
+			"responsive": true,
+			"css": "--wpek-cols",
+			"unit": "",
+			"min": 1,
+			"max": 6,
+			"step": 1,
+			"default": ""
+		},
+		"columnGap": {
+			"type": "range",
+			"panel": "layout",
+			"label": "Column gap",
+			"responsive": true,
+			"css": "--wpek-col-gap",
+			"unit": "px",
+			"min": 0,
+			"max": 100,
+			"step": 1,
+			"default": ""
+		},
+		"rowGap": {
+			"type": "range",
+			"panel": "layout",
+			"label": "Row gap",
+			"responsive": true,
+			"css": "--wpek-row-gap",
+			"unit": "px",
+			"min": 0,
+			"max": 120,
+			"step": 1,
+			"default": ""
+		},
+		"contentGap": {
+			"type": "range",
+			"panel": "layout",
+			"label": "Spacing within card",
+			"responsive": true,
+			"css": "--wpek-content-gap",
+			"unit": "px",
+			"min": 0,
+			"max": 60,
+			"step": 1,
+			"default": ""
+		},
+		"cardStyle": {
+			"type": "select",
+			"panel": "cards",
+			"label": "Card appearance",
+			"default": "boxed",
+			"options": {
+				"boxed": "Boxed",
+				"minimal": "Minimal"
+			}
+		},
+		"hover": {
+			"type": "select",
+			"panel": "cards",
+			"label": "Card hover",
+			"default": "lift",
+			"options": {
+				"none": "None",
+				"lift": "Lift",
+				"image_zoom": "Image zoom",
+				"border": "Accent border"
+			}
+		},
+		"imageHover": {
+			"type": "select",
+			"panel": "media",
+			"label": "Image hover",
+			"default": "zoom",
+			"options": {
+				"none": "None",
+				"zoom": "Zoom",
+				"greyscale": "Greyscale to colour"
+			}
+		},
+		"emptyText": {
+			"type": "text",
+			"panel": "query",
+			"label": "No results message",
+			"default": "No posts found."
+		}
+	},
+	"groups": {
+		"cardPadding": {
+			"type": "spacing",
+			"label": "Card padding",
+			"prop": "padding",
+			"selector": ".wpe-posts-grid__card",
+			"panel": "cards"
+		},
+		"cardBackground": {
+			"type": "background",
+			"label": "Card background",
+			"selector": ".wpe-posts-grid__card",
+			"panel": "cards"
+		},
+		"cardBorder": {
+			"type": "border",
+			"label": "Card border and radius",
+			"selector": ".wpe-posts-grid__card",
+			"panel": "cards"
+		},
+		"cardShadow": {
+			"type": "shadow",
+			"label": "Card shadow",
+			"selector": ".wpe-posts-grid__card",
+			"panel": "cards"
+		},
+		"imageBorder": {
+			"type": "border",
+			"label": "Image border and radius",
+			"selector": ".wpe-posts-grid__image img",
+			"panel": "media"
+		},
+		"imageFilters": {
+			"type": "filters",
+			"label": "Image filters",
+			"selector": ".wpe-posts-grid__image img",
+			"panel": "media"
+		},
+		"metaTypography": {
+			"type": "typography",
+			"label": "Metadata typography",
+			"selector": ".wpe-posts-grid__meta",
+			"panel": "text_style"
+		},
+		"metaColor": {
+			"type": "colors",
+			"label": "Metadata colour",
+			"prop": "color",
+			"selector": ".wpe-posts-grid__meta",
+			"panel": "text_style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"label": "Title typography",
+			"selector": ".wpe-posts-grid__title",
+			"panel": "text_style"
+		},
+		"titleColor": {
+			"type": "colors",
+			"label": "Title colour",
+			"prop": "color",
+			"selector": ".wpe-posts-grid__title",
+			"panel": "text_style"
+		},
+		"titleEffects": {
+			"type": "textEffects",
+			"label": "Title shadow and stroke",
+			"selector": ".wpe-posts-grid__title",
+			"panel": "text_style"
+		},
+		"excerptTypography": {
+			"type": "typography",
+			"label": "Excerpt typography",
+			"selector": ".wpe-posts-grid__excerpt",
+			"panel": "text_style"
+		},
+		"excerptColor": {
+			"type": "colors",
+			"label": "Excerpt colour",
+			"prop": "color",
+			"selector": ".wpe-posts-grid__excerpt",
+			"panel": "text_style"
+		},
+		"linkColor": {
+			"type": "colors",
+			"label": "Read more colour",
+			"prop": "color",
+			"selector": ".wpe-posts-grid__read-more",
+			"panel": "text_style"
+		}
+	}
+}

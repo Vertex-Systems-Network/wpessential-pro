@@ -1,0 +1,166 @@
+{
+	"name": "timeline",
+	"title": "Timeline / Steps (WPEssential)",
+	"category": "content",
+	"description": "Semantic timeline of milestones with safe rich descriptions, media attachments, optional details links and responsive layouts.",
+	"icon": "list-view",
+	"elementor_icon": "eicon-time-line",
+	"keywords": [
+		"timeline",
+		"milestones",
+		"steps",
+		"history",
+		"process"
+	],
+	"panels": {
+		"content": "Milestones",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"title": {
+			"type": "text",
+			"label": "Timeline heading",
+			"default": "Our journey",
+			"panel": "content"
+		},
+		"items": {
+			"type": "repeater",
+			"label": "Milestones",
+			"title_field": "title",
+			"default": [
+				{
+					"title": "Founded",
+					"date": "2020",
+					"content": "Our story began with an ambitious idea."
+				},
+				{
+					"title": "Growing together",
+					"date": "2024",
+					"content": "A new chapter for our team."
+				}
+			],
+			"panel": "content",
+			"fields": {
+				"title": {
+					"type": "text",
+					"label": "Milestone title",
+					"default": "Milestone"
+				},
+				"date": {
+					"type": "text",
+					"label": "Date or period label",
+					"default": ""
+				},
+				"content": {
+					"type": "html",
+					"label": "Details",
+					"default": ""
+				},
+				"link": {
+					"type": "url",
+					"label": "More details URL",
+					"default": ""
+				},
+				"linkLabel": {
+					"type": "text",
+					"label": "Link text",
+					"default": "Read more"
+				},
+				"image": {
+					"type": "image",
+					"label": "Optional milestone image",
+					"default": {}
+				}
+			}
+		},
+		"layout": {
+			"type": "select",
+			"label": "Timeline orientation",
+			"default": "vertical",
+			"options": {
+				"vertical": "Vertical",
+				"horizontal": "Horizontal scrolling"
+			},
+			"panel": "style"
+		},
+		"side": {
+			"type": "select",
+			"label": "Vertical alignment",
+			"default": "left",
+			"options": {
+				"left": "Left",
+				"alternate": "Alternating"
+			},
+			"panel": "style"
+		},
+		"showImages": {
+			"type": "toggle",
+			"label": "Show milestone images",
+			"default": true,
+			"panel": "style"
+		},
+		"showDates": {
+			"type": "toggle",
+			"label": "Show milestone dates",
+			"default": true,
+			"panel": "style"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Milestone gap",
+			"default": "",
+			"min": 0,
+			"max": 100,
+			"step": 2,
+			"unit": "px",
+			"css": "--wpek-timeline-gap",
+			"responsive": true,
+			"panel": "style"
+		},
+		"lineColor": {
+			"type": "color",
+			"label": "Connector color",
+			"default": "",
+			"css": "--wpek-timeline-line",
+			"panel": "style"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Max width",
+			"default": "",
+			"min": 300,
+			"max": 1600,
+			"step": 10,
+			"unit": "px",
+			"css": "--wpek-timeline-max",
+			"responsive": true,
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"cardBackground": {
+			"type": "background",
+			"selector": ".wpe-timeline__item",
+			"label": "Card background",
+			"panel": "style"
+		},
+		"cardBorder": {
+			"type": "border",
+			"selector": ".wpe-timeline__item",
+			"label": "Card border",
+			"panel": "style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"selector": ".wpe-timeline__title",
+			"label": "Milestone title typography",
+			"panel": "style"
+		},
+		"dateTypography": {
+			"type": "typography",
+			"selector": ".wpe-timeline__date",
+			"label": "Date typography",
+			"panel": "style"
+		}
+	}
+}

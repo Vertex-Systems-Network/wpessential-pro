@@ -1,0 +1,216 @@
+{
+	"name": "products",
+	"title": "WooCommerce Products (WPEssential)",
+	"category": "content",
+	"description": "Dependency-safe WooCommerce product grid with featured/category/ID query, published products, pricing, ratings and safe product-page links.",
+	"icon": "cart",
+	"elementor_icon": "eicon-products",
+	"keywords": [
+		"woocommerce",
+		"products",
+		"shop",
+		"catalog",
+		"store",
+		"ecommerce"
+	],
+	"panels": {
+		"query": "Product query",
+		"content": "Heading",
+		"display": "Display",
+		"layout": "Grid and style"
+	},
+	"attributes": {
+		"heading": {
+			"type": "text",
+			"label": "Section heading",
+			"default": "Featured products",
+			"panel": "content"
+		},
+		"category": {
+			"type": "text",
+			"label": "Product category slug (optional)",
+			"default": "",
+			"panel": "query"
+		},
+		"ids": {
+			"type": "text",
+			"label": "Product IDs (comma-separated, optional)",
+			"default": "",
+			"panel": "query"
+		},
+		"count": {
+			"type": "range",
+			"label": "Maximum products",
+			"default": 6,
+			"min": 1,
+			"max": 24,
+			"step": 1,
+			"unit": "",
+			"panel": "query"
+		},
+		"sort": {
+			"type": "select",
+			"label": "Sort products by",
+			"default": "date",
+			"options": {
+				"date": "Newest first",
+				"title": "Product title",
+				"price": "Price",
+				"popularity": "Popularity",
+				"rating": "Rating"
+			},
+			"panel": "query"
+		},
+		"order": {
+			"type": "select",
+			"label": "Order",
+			"default": "DESC",
+			"options": {
+				"DESC": "Descending",
+				"ASC": "Ascending"
+			},
+			"panel": "query"
+		},
+		"featuredOnly": {
+			"type": "toggle",
+			"label": "Only featured products",
+			"default": false,
+			"panel": "query"
+		},
+		"inStockOnly": {
+			"type": "toggle",
+			"label": "Hide out-of-stock products",
+			"default": false,
+			"panel": "query"
+		},
+		"showImage": {
+			"type": "toggle",
+			"label": "Show product image",
+			"default": true,
+			"panel": "display"
+		},
+		"showPrice": {
+			"type": "toggle",
+			"label": "Show price",
+			"default": true,
+			"panel": "display"
+		},
+		"showRating": {
+			"type": "toggle",
+			"label": "Show rating",
+			"default": true,
+			"panel": "display"
+		},
+		"showSale": {
+			"type": "toggle",
+			"label": "Show sale badge",
+			"default": true,
+			"panel": "display"
+		},
+		"showButton": {
+			"type": "toggle",
+			"label": "Show product details button",
+			"default": true,
+			"panel": "display"
+		},
+		"buttonLabel": {
+			"type": "text",
+			"label": "Product details button text",
+			"default": "View product",
+			"panel": "display"
+		},
+		"emptyMessage": {
+			"type": "text",
+			"label": "No results message",
+			"default": "No products found.",
+			"panel": "display"
+		},
+		"columns": {
+			"type": "range",
+			"label": "Columns",
+			"default": "",
+			"min": 1,
+			"max": 6,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-products-cols",
+			"panel": "layout"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Card gap",
+			"default": "",
+			"min": 0,
+			"max": 72,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-products-gap",
+			"panel": "layout"
+		},
+		"ratio": {
+			"type": "select",
+			"label": "Image ratio",
+			"default": "1/1",
+			"options": {
+				"1/1": "Square",
+				"4/3": "Landscape",
+				"3/4": "Portrait",
+				"16/9": "Wide"
+			},
+			"responsive": true,
+			"css": "--wpek-products-ratio",
+			"panel": "layout"
+		},
+		"cardStyle": {
+			"type": "select",
+			"label": "Card appearance",
+			"default": "boxed",
+			"options": {
+				"boxed": "Boxed",
+				"minimal": "Minimal"
+			},
+			"panel": "layout"
+		}
+	},
+	"groups": {
+		"cardBorder": {
+			"type": "border",
+			"label": "Card border",
+			"selector": ".wpe-products__item",
+			"panel": "layout"
+		},
+		"cardBackground": {
+			"type": "background",
+			"label": "Card background",
+			"selector": ".wpe-products__item",
+			"panel": "layout"
+		},
+		"cardPadding": {
+			"type": "spacing",
+			"label": "Card padding",
+			"prop": "padding",
+			"selector": ".wpe-products__item",
+			"panel": "layout"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"label": "Title typography",
+			"selector": ".wpe-products__name",
+			"panel": "layout"
+		},
+		"priceTypography": {
+			"type": "typography",
+			"label": "Price typography",
+			"selector": ".wpe-products__price",
+			"panel": "layout"
+		},
+		"buttonBackground": {
+			"type": "background",
+			"label": "Link background",
+			"selector": ".wpe-products__action",
+			"panel": "layout"
+		}
+	}
+}

@@ -1,0 +1,227 @@
+{
+	"name": "pricing-table",
+	"title": "Pricing Table (WPEssential)",
+	"category": "content",
+	"description": "Accessible standalone plan card with included/excluded features, honest price display, optional badge and safe CTA.",
+	"icon": "money-alt",
+	"elementor_icon": "eicon-price-table",
+	"keywords": [
+		"pricing",
+		"price",
+		"plan",
+		"subscription",
+		"features"
+	],
+	"panels": {
+		"content": "Plan",
+		"features": "Features",
+		"action": "Call to action",
+		"style": "Style"
+	},
+	"attributes": {
+		"plan": {
+			"type": "text",
+			"label": "Plan name",
+			"default": "Growth",
+			"panel": "content"
+		},
+		"subtitle": {
+			"type": "textarea",
+			"label": "Plan summary",
+			"default": "Everything a growing team needs.",
+			"panel": "content"
+		},
+		"currency": {
+			"type": "text",
+			"label": "Currency symbol",
+			"default": "$",
+			"panel": "content"
+		},
+		"price": {
+			"type": "text",
+			"label": "Price (display text)",
+			"default": "79",
+			"panel": "content"
+		},
+		"period": {
+			"type": "text",
+			"label": "Billing period",
+			"default": "/ month",
+			"panel": "content"
+		},
+		"oldPrice": {
+			"type": "text",
+			"label": "Strikethrough price (optional)",
+			"default": "",
+			"panel": "content"
+		},
+		"ribbon": {
+			"type": "text",
+			"label": "Featured badge",
+			"default": "Most popular",
+			"panel": "content"
+		},
+		"featured": {
+			"type": "toggle",
+			"label": "Highlight plan",
+			"default": true,
+			"panel": "content"
+		},
+		"features": {
+			"type": "repeater",
+			"label": "Included and excluded features",
+			"title_field": "text",
+			"panel": "features",
+			"default": [
+				{
+					"text": "Unlimited projects",
+					"included": true
+				},
+				{
+					"text": "Priority support",
+					"included": true
+				},
+				{
+					"text": "Dedicated manager",
+					"included": false
+				}
+			],
+			"fields": {
+				"text": {
+					"type": "text",
+					"label": "Feature",
+					"default": "New benefit"
+				},
+				"included": {
+					"type": "toggle",
+					"label": "Included",
+					"default": true
+				}
+			}
+		},
+		"buttonText": {
+			"type": "text",
+			"label": "Button text",
+			"default": "Choose plan",
+			"panel": "action"
+		},
+		"buttonUrl": {
+			"type": "url",
+			"label": "Button destination",
+			"default": "",
+			"panel": "action"
+		},
+		"newTab": {
+			"type": "toggle",
+			"label": "Open button in new tab",
+			"default": false,
+			"panel": "action"
+		},
+		"footer": {
+			"type": "text",
+			"label": "Note below button",
+			"default": "Cancel anytime.",
+			"panel": "action"
+		},
+		"appearance": {
+			"type": "select",
+			"label": "Card style",
+			"default": "boxed",
+			"options": {
+				"boxed": "Boxed card",
+				"minimal": "Minimal",
+				"accent": "Accent border"
+			},
+			"panel": "style"
+		},
+		"alignment": {
+			"type": "select",
+			"label": "Text alignment",
+			"default": "center",
+			"options": {
+				"start": "Start",
+				"center": "Center",
+				"end": "End"
+			},
+			"css": "--wpek-price-align",
+			"responsive": true,
+			"panel": "style"
+		},
+		"maxWidth": {
+			"type": "range",
+			"label": "Maximum width",
+			"default": "",
+			"responsive": true,
+			"css": "--wpek-price-max",
+			"min": 200,
+			"max": 1000,
+			"step": 10,
+			"unit": "px",
+			"panel": "style"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Card spacing",
+			"default": "",
+			"responsive": true,
+			"css": "--wpek-price-gap",
+			"min": 0,
+			"max": 70,
+			"step": 1,
+			"unit": "px",
+			"panel": "style"
+		}
+	},
+	"groups": {
+		"cardBackground": {
+			"type": "background",
+			"label": "Background",
+			"selector": ".wpe-pricing-table",
+			"panel": "style"
+		},
+		"cardBorder": {
+			"type": "border",
+			"label": "Border/radius",
+			"selector": ".wpe-pricing-table",
+			"panel": "style"
+		},
+		"cardPadding": {
+			"type": "spacing",
+			"label": "Padding",
+			"selector": ".wpe-pricing-table",
+			"prop": "padding",
+			"panel": "style"
+		},
+		"cardShadow": {
+			"type": "shadow",
+			"label": "Shadow",
+			"selector": ".wpe-pricing-table",
+			"panel": "style"
+		},
+		"priceTypography": {
+			"type": "typography",
+			"label": "Price typography",
+			"selector": ".wpe-pricing-table__amount",
+			"panel": "style"
+		},
+		"priceColor": {
+			"type": "colors",
+			"label": "Price colour",
+			"selector": ".wpe-pricing-table__amount",
+			"prop": "color",
+			"panel": "style"
+		},
+		"headingTypography": {
+			"type": "typography",
+			"label": "Plan title typography",
+			"selector": ".wpe-pricing-table__heading",
+			"panel": "style"
+		},
+		"buttonBackground": {
+			"type": "background",
+			"label": "Button background",
+			"selector": ".wpe-pricing-table__button",
+			"panel": "action"
+		}
+	}
+}

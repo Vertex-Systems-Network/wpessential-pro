@@ -1,0 +1,32 @@
+/* WPEssential Interactive kit: accessible tooltips, disclosures and switcher. */
+.wpe-tooltip{--wpek-interactive-max:100%;--wpek-interactive-gap:16px;--wpek-tip-width:280px;--wpek-interactive-margin:0 auto 0 0;--wpek-interactive-align:flex-start;box-sizing:border-box;max-width:var(--wpek-interactive-max);margin:var(--wpek-interactive-margin);min-width:0}
+.wpe-tooltip__body{min-width:0;overflow-wrap:anywhere;line-height:1.65}
+.wpe-tooltip.is-style-boxed .wpe-tooltip__body{padding:16px;border:1px solid var(--wp--preset--color--border,#d2d5d8);border-radius:10px;background:var(--wp--preset--color--surface,transparent)}
+.wpe-tooltip.is-style-accent .wpe-tooltip__body{padding-inline-start:16px;border-inline-start:3px solid var(--wp--preset--color--primary,currentColor)}
+.wpe-tooltip__tip-wrap{position:relative;display:inline-flex;max-width:100%;vertical-align:middle}
+.wpe-tooltip__trigger,.wpe-tooltip__summary,.wpe-tooltip__switch-button{font:inherit;cursor:pointer}
+.wpe-tooltip__trigger{border:1px solid var(--wp--preset--color--primary,currentColor);border-radius:8px;padding:8px 13px;color:inherit;background:transparent}
+.wpe-tooltip__trigger:focus-visible,.wpe-tooltip__summary:focus-visible,.wpe-tooltip__switch-button:focus-visible{outline:3px solid var(--wp--preset--color--primary,#bc712e);outline-offset:3px}
+.wpe-tooltip__bubble{position:absolute;z-index:10;pointer-events:none;visibility:hidden;opacity:0;max-width:var(--wpek-tip-width);width:max-content;min-width:120px;white-space:normal;overflow-wrap:anywhere;box-sizing:border-box;padding:10px 12px;color:var(--wp--preset--color--surface,#fff);background:var(--wp--preset--color--contrast,#26262a);border-radius:8px;box-shadow:0 6px 22px rgba(0,0,0,.2);line-height:1.5;transition:opacity .15s ease}
+.wpe-tooltip__tip-wrap:is(:hover,:focus-within,.is-open) .wpe-tooltip__bubble{visibility:visible;opacity:1}
+.wpe-tooltip__tip-wrap.is-position-top .wpe-tooltip__bubble{inset-inline-start:50%;bottom:calc(100% + 9px);transform:translateX(-50%)}
+.wpe-tooltip__tip-wrap.is-position-bottom .wpe-tooltip__bubble{inset-inline-start:50%;top:calc(100% + 9px);transform:translateX(-50%)}
+.wpe-tooltip__tip-wrap.is-position-start .wpe-tooltip__bubble{inset-inline-end:calc(100% + 9px);top:50%;transform:translateY(-50%)}
+.wpe-tooltip__tip-wrap.is-position-end .wpe-tooltip__bubble{inset-inline-start:calc(100% + 9px);top:50%;transform:translateY(-50%)}
+.wpe-tooltip.is-showmore{display:flex;flex-direction:column;gap:var(--wpek-interactive-gap);align-items:stretch}
+.wpe-tooltip__details{width:100%}
+.wpe-tooltip__summary{display:inline-flex;align-items:center;gap:8px;color:var(--wp--preset--color--primary,currentColor);font-weight:650;list-style:none}
+.wpe-tooltip__summary::-webkit-details-marker{display:none}
+.wpe-tooltip__details:not([open]) .wpe-tooltip__less,.wpe-tooltip__details[open] .wpe-tooltip__more{display:none}
+.wpe-tooltip__expanded{padding-block-start:var(--wpek-interactive-gap)}
+.wpe-tooltip__switch{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 var(--wpek-interactive-gap)}
+.wpe-tooltip__switch-button{border:1px solid var(--wp--preset--color--border,#bdbfc5);border-radius:8px;background:transparent;color:inherit;padding:10px 18px}
+.wpe-tooltip__switch-button[aria-selected=true]{background:var(--wp--preset--color--primary,#26786b);border-color:var(--wp--preset--color--primary,#26786b);color:var(--wp--preset--color--surface,#fff)}
+.wpe-tooltip__switch-panel{margin-block-end:var(--wpek-interactive-gap)}
+.wpe-tooltip__switch-panel[hidden]{display:none!important}
+@media(hover:hover){.wpe-tooltip.is-hover-lift .wpe-tooltip__trigger:hover,.wpe-tooltip.is-hover-lift .wpe-tooltip__switch-button:hover{transform:translateY(-2px)}.wpe-tooltip.is-hover-highlight .wpe-tooltip__trigger:hover,.wpe-tooltip.is-hover-highlight .wpe-tooltip__switch-button:hover{background:var(--wp--preset--color--surface-alt,rgba(127,127,127,.12))}}
+@media(max-width:580px){.wpe-tooltip__bubble{max-width:min(var(--wpek-tip-width),75vw)}.wpe-tooltip__tip-wrap:is(.is-position-start,.is-position-end) .wpe-tooltip__bubble{inset-inline-start:0;inset-inline-end:auto;top:calc(100% + 9px);bottom:auto;transform:none}}
+@media(prefers-reduced-motion:reduce){.wpe-tooltip__bubble,.wpe-tooltip__trigger,.wpe-tooltip__switch-button{transition:none!important;transform:none!important}}
+
+/* Escape dismisses even while the tooltip trigger remains keyboard-focused. */
+.wpe-tooltip__tip-wrap.is-dismissed .wpe-tooltip__bubble{visibility:hidden;opacity:0}

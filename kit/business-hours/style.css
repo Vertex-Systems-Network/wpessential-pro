@@ -1,0 +1,12 @@
+.wpe-business-hours{--wpek-hours-max:560px;--wpek-hours-gap:9px;box-sizing:border-box;max-width:var(--wpek-hours-max);min-width:0}
+.wpe-business-hours__title{margin:0 0 18px}
+.wpe-business-hours__list{display:flex;flex-direction:column;gap:var(--wpek-hours-gap);margin:0;padding:0}
+.wpe-business-hours__row{display:flex;align-items:baseline;gap:10px;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--wp--preset--color--border,#d8d8d8)}
+.wpe-business-hours__day{font-weight:600}
+.wpe-business-hours__time{margin:0;text-align:end;font-variant-numeric:tabular-nums}
+.wpe-business-hours .is-today{border-inline-start:3px solid var(--wp--preset--color--primary,currentColor);padding-inline-start:12px;font-weight:750}
+.wpe-business-hours__table{border-collapse:collapse;width:100%}
+.wpe-business-hours__table th,.wpe-business-hours__table td{border-bottom:1px solid var(--wp--preset--color--border,#d8d8d8);padding:9px 7px}
+.wpe-business-hours__table th{text-align:start}
+.wpe-business-hours__table td{text-align:end}
+.wpe-business-hours__timezone{font-size:.82rem;opacity:.75;margin:12px 0 0}

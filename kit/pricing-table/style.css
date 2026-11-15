@@ -1,0 +1,16 @@
+.wpe-pricing-table{--wpek-price-max:470px;--wpek-price-gap:18px;--wpek-price-align:center;display:flex;flex-direction:column;gap:var(--wpek-price-gap);max-width:var(--wpek-price-max);min-width:0;box-sizing:border-box;text-align:var(--wpek-price-align);position:relative}
+.wpe-pricing-table.is-boxed{border:1px solid var(--wp--preset--color--border,#d9dade);border-radius:16px;padding:28px;background:var(--wp--preset--color--surface,transparent)}
+.wpe-pricing-table.is-accent{border:2px solid var(--wp--preset--color--primary,currentColor);border-radius:16px;padding:28px}
+.wpe-pricing-table__ribbon{align-self:center;margin:0;padding:6px 12px;border-radius:100px;color:var(--wp--preset--color--surface,#fff);background:var(--wp--preset--color--primary,#245f56);font-weight:650;font-size:.82rem}
+.wpe-pricing-table__heading{margin:0;font-size:1.55rem}
+.wpe-pricing-table__subtitle{margin:0;line-height:1.55;opacity:.8}
+.wpe-pricing-table__price{display:flex;align-items:baseline;justify-content:center;gap:7px;flex-wrap:wrap}
+.wpe-pricing-table__amount{font-size:clamp(2rem,5vw,3.4rem);font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.wpe-pricing-table__old{opacity:.7}
+.wpe-pricing-table__features{padding:0;margin:0;list-style:none;display:grid;gap:12px;text-align:start}
+.wpe-pricing-table__features li{display:flex;align-items:baseline;gap:9px;line-height:1.5}
+.wpe-pricing-table__features .is-excluded{opacity:.65}
+.wpe-pricing-table__marker{flex:none;font-weight:750}
+.wpe-pricing-table__button{display:block;padding:13px 20px;border-radius:9px;text-align:center;text-decoration:none;font-weight:700;background:var(--wp--preset--color--primary,#245f56);color:var(--wp--preset--color--surface,#fff)}
+.wpe-pricing-table__button:focus-visible{outline:3px solid currentColor;outline-offset:3px}
+.wpe-pricing-table__footer{margin:0;font-size:.82rem;opacity:.75}

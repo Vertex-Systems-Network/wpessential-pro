@@ -1,0 +1,111 @@
+{
+	"name": "forms",
+	"title": "WPForms Form (WPEssential)",
+	"category": "content",
+	"icon": "feedback",
+	"elementor_icon": "eicon-form-horizontal",
+	"keywords": [
+		"form",
+		"wpforms",
+		"contact",
+		"newsletter"
+	],
+	"description": "Embed a published WPForms Lite form by ID, leaving validation, submissions and spam prevention to the form plugin.",
+	"panels": {
+		"content": "WPForms Lite",
+		"style": "Form style"
+	},
+	"attributes": {
+		"formId": {
+			"type": "text",
+			"label": "Published WPForms ID (numeric)",
+			"default": "",
+			"panel": "content"
+		},
+		"heading": {
+			"type": "text",
+			"label": "Heading above form",
+			"default": "",
+			"panel": "content"
+		},
+		"showTitle": {
+			"type": "toggle",
+			"label": "Show WPForms title",
+			"default": true,
+			"panel": "content"
+		},
+		"showDescription": {
+			"type": "toggle",
+			"label": "Show WPForms description",
+			"default": true,
+			"panel": "content"
+		},
+		"columns": {
+			"type": "select",
+			"label": "Field columns",
+			"default": "1",
+			"panel": "style",
+			"options": {
+				"1": "Single",
+				"2": "Two columns"
+			}
+		},
+		"width": {
+			"type": "range",
+			"label": "Maximum form width",
+			"default": "",
+			"panel": "style",
+			"min": 260,
+			"max": 1400,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-form-width"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Field gap",
+			"default": "",
+			"panel": "style",
+			"min": 0,
+			"max": 70,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-form-gap"
+		}
+	},
+	"groups": {
+		"formBackground": {
+			"type": "background",
+			"label": "Form background",
+			"selector": ".wpe-forms__body",
+			"panel": "style"
+		},
+		"formPadding": {
+			"type": "spacing",
+			"label": "Form padding",
+			"selector": ".wpe-forms__body",
+			"panel": "style",
+			"prop": "padding"
+		},
+		"labelTypography": {
+			"type": "typography",
+			"label": "Field label typography",
+			"selector": ".wpe-forms .wpforms-field-label",
+			"panel": "style"
+		},
+		"fieldBorder": {
+			"type": "border",
+			"label": "Input border",
+			"selector": ".wpe-forms .wpforms-field input",
+			"panel": "style"
+		},
+		"buttonBackground": {
+			"type": "background",
+			"label": "Submit button background",
+			"selector": ".wpe-forms .wpforms-submit",
+			"panel": "style"
+		}
+	}
+}

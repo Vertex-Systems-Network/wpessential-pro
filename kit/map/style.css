@@ -1,0 +1,11 @@
+.wpe-map{--wpek-map-height:380px;--wpek-map-max:100%;max-width:var(--wpek-map-max);min-width:0}
+.wpe-map__title{margin:0 0 14px;font-size:1.25rem}
+.wpe-map__frame{position:relative;min-height:var(--wpek-map-height);overflow:hidden;border:1px solid var(--wp--preset--color--border,#cdd2d4);border-radius:12px;background:var(--wp--preset--color--surface-alt,#f2f4f2)}
+.wpe-map__placeholder{box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:24px;min-height:var(--wpek-map-height)}
+.wpe-map__coordinates{font-weight:750;font-variant-numeric:tabular-nums;margin:0}
+.wpe-map__address{font-style:normal;white-space:pre-line;overflow-wrap:anywhere}
+.wpe-map__privacy{max-width:420px;line-height:1.5;font-size:.84rem;margin:0}
+.wpe-map__load{font:inherit;cursor:pointer;padding:12px 18px;border:0;border-radius:8px;color:var(--wp--preset--color--surface,#fff);background:var(--wp--preset--color--primary,#236c53)}
+.wpe-map__link-wrap{margin:0}
+.wpe-map__link:focus-visible,.wpe-map__load:focus-visible{outline:3px solid currentColor;outline-offset:4px}
+.wpe-map__iframe{width:100%;height:var(--wpek-map-height);border:0;display:block}

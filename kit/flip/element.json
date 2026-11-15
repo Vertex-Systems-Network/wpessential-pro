@@ -1,0 +1,155 @@
+{
+	"name": "flip",
+	"title": "Flip / Hover Box (WPEssential)",
+	"category": "content",
+	"icon": "image-flip-horizontal",
+	"elementor_icon": "eicon-flip-box",
+	"keywords": [
+		"flip",
+		"reveal",
+		"card",
+		"hover"
+	],
+	"description": "Two-sided native disclosure card with reduced-motion CSS, keyboard/touch support and optional CTA.",
+	"panels": {
+		"content": "Front and back",
+		"style": "Appearance"
+	},
+	"attributes": {
+		"frontTitle": {
+			"type": "text",
+			"label": "Front title",
+			"default": "Discover more",
+			"panel": "content"
+		},
+		"frontContent": {
+			"type": "html",
+			"label": "Front copy",
+			"default": "<p>Open to see more.</p>",
+			"panel": "content"
+		},
+		"backTitle": {
+			"type": "text",
+			"label": "Back title",
+			"default": "More information",
+			"panel": "content"
+		},
+		"backContent": {
+			"type": "html",
+			"label": "Back copy",
+			"default": "<p>All content accessible by keyboard.</p>",
+			"panel": "content"
+		},
+		"icon": {
+			"type": "icon",
+			"label": "Front icon",
+			"default": {
+				"library": "wpessential",
+				"value": "spark"
+			},
+			"panel": "content"
+		},
+		"url": {
+			"type": "url",
+			"label": "Back link URL",
+			"default": "",
+			"panel": "content"
+		},
+		"button": {
+			"type": "text",
+			"label": "Back button text",
+			"default": "Learn more",
+			"panel": "content"
+		},
+		"newTab": {
+			"type": "toggle",
+			"label": "Open link in new tab",
+			"default": false,
+			"panel": "content"
+		},
+		"toggleLabel": {
+			"type": "text",
+			"label": "Reveal action label",
+			"default": "Flip card",
+			"panel": "content"
+		},
+		"opened": {
+			"type": "toggle",
+			"label": "Show back by default",
+			"default": false,
+			"panel": "style"
+		},
+		"direction": {
+			"type": "select",
+			"label": "Transition direction",
+			"default": "horizontal",
+			"panel": "style",
+			"options": {
+				"horizontal": "Horizontal",
+				"vertical": "Vertical"
+			}
+		},
+		"height": {
+			"type": "range",
+			"label": "Min card height",
+			"default": "",
+			"panel": "style",
+			"min": 170,
+			"max": 750,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-flip-h"
+		},
+		"gap": {
+			"type": "range",
+			"label": "Content gap",
+			"default": "",
+			"panel": "style",
+			"min": 0,
+			"max": 60,
+			"step": 1,
+			"unit": "px",
+			"responsive": true,
+			"css": "--wpek-flip-gap"
+		}
+	},
+	"groups": {
+		"frontBackground": {
+			"type": "background",
+			"label": "Front background",
+			"selector": ".wpe-flip__front",
+			"panel": "style"
+		},
+		"backBackground": {
+			"type": "background",
+			"label": "Back background",
+			"selector": ".wpe-flip__back",
+			"panel": "style"
+		},
+		"border": {
+			"type": "border",
+			"label": "Card border",
+			"selector": ".wpe-flip__details",
+			"panel": "style"
+		},
+		"shadow": {
+			"type": "shadow",
+			"label": "Card shadow",
+			"selector": ".wpe-flip__details",
+			"panel": "style"
+		},
+		"titleTypography": {
+			"type": "typography",
+			"label": "Title typography",
+			"selector": ".wpe-flip__title",
+			"panel": "style"
+		},
+		"bodyTypography": {
+			"type": "typography",
+			"label": "Body typography",
+			"selector": ".wpe-flip__text",
+			"panel": "style"
+		}
+	}
+}
