@@ -7,19 +7,21 @@
 
 defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Template-local variables.
+$wpe_caller_post = $GLOBALS['post'] ?? null;
 $wpe_type   = sanitize_key( (string) $a['postType'] );
 $wpe_object = get_post_type_object( $wpe_type );
-if ( ! $wpe_object || ! $wpe_object->public ) {
+if ( ! $wpe_object || ! is_post_type_viewable( $wpe_object ) ) {
 	$wpe_type = 'post';
 }
 $wpe_per_page   = min( 24, max( 1, (int) $a['postsPerPage'] ) );
 $wpe_tax        = sanitize_key( (string) $a['taxonomy'] );
 $wpe_tax_object = $wpe_tax ? get_taxonomy( $wpe_tax ) : false;
-$wpe_paged_key  = 'wpe_pg_' . substr( md5( wp_json_encode( array( $a['postType'], $a['taxonomy'], $a['terms'], $a['orderBy'], $a['order'], $a['postsPerPage'], $a['offset'], $a['cssClass'] ?? '' ) ) ), 0, 8 );
+$wpe_paged_key  = 'wpe_pg_' . substr( md5( wp_json_encode( array( $a['postType'], $a['taxonomy'], $a['terms'], $a['orderBy'], $a['order'], $a['postsPerPage'], $a['offset'], $a['cssClass'] ?? '', $a['excludeCurrent'], $a['excludeCurrent'] ? get_the_ID() : 0, $id ?? '' ) ) ), 0, 8 );
 $wpe_page       = ! empty( $_GET[ $wpe_paged_key ] ) ? max( 1, absint( wp_unslash( $_GET[ $wpe_paged_key ] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination.
 $wpe_query_args = array(
 	'post_type'           => $wpe_type,
 	'post_status'         => 'publish',
+	'has_password'        => false,
 	'posts_per_page'      => $wpe_per_page,
 	'offset'              => min( 100, max( 0, (int) $a['offset'] ) ) + ( $wpe_page - 1 ) * $wpe_per_page,
 	'orderby'             => in_array( $a['orderBy'], array( 'date', 'modified', 'title', 'menu_order', 'comment_count' ), true ) ? $a['orderBy'] : 'date',
@@ -107,4 +109,7 @@ $wpe_size  = in_array( $a['imageSize'], array( 'medium', 'medium_large', 'large'
 	<?php endif; ?>
 </div>
 <?php
-wp_reset_postdata();
+$GLOBALS['post'] = $wpe_caller_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the enclosing loop's post.
+if ( $wpe_caller_post instanceof WP_Post ) {
+	setup_postdata( $wpe_caller_post );
+}

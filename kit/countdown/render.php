@@ -31,6 +31,10 @@ $wpe_shown = array(
 	'minutes' => ! empty( $a['showMinutes'] ),
 	'seconds' => ! empty( $a['showSeconds'] ),
 );
+// With every unit switched off the timer would be blank, so show them all.
+if ( ! in_array( true, $wpe_shown, true ) ) {
+	$wpe_shown = array_fill_keys( array_keys( $wpe_shown ), true );
+}
 ?>
 <section id="<?php echo esc_attr( $id ); ?>" class="wpe-countdown is-<?php echo esc_attr( $wpe_style ); ?>" data-wpe-countdown="1" data-end="<?php echo esc_attr( (string) ( $wpe_time * 1000 ) ); ?>" aria-label="<?php esc_attr_e( 'Countdown timer', 'wpessential-pro' ); ?>">
 	<?php if ( '' !== trim( (string) $a['heading'] ) ) : ?>

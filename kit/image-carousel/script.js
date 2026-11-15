@@ -61,7 +61,12 @@
 			root.addEventListener( 'focusin', function () { paused = true; stop(); } );
 			root.addEventListener( 'focusout', function ( event ) { if ( ! root.contains( event.relatedTarget ) ) { paused = false; start(); } } );
 		}
-		document.addEventListener( 'visibilitychange', function () { if ( document.hidden ) { stop(); } else { start(); } } );
+		function onVisibility() {
+			// A carousel removed from the page lets go of its listener.
+			if ( ! root.isConnected ) { stop(); document.removeEventListener( 'visibilitychange', onVisibility ); return; }
+			if ( document.hidden ) { stop(); } else { start(); }
+		}
+		document.addEventListener( 'visibilitychange', onVisibility );
 		show( 0 );
 		start();
 	}

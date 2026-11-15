@@ -9,6 +9,7 @@
 defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals -- Kit renderer scope.
+$wpe_caller_post = $GLOBALS['post'] ?? null;
 
 $wpe_rows         = array();
 $wpe_source       = 'wp-posts' === $a['source'] ? 'wp-posts' : 'curated';
@@ -17,13 +18,14 @@ $wpe_date_pattern = '/^\d{4}-\d{2}-\d{2}$/';
 if ( 'wp-posts' === $wpe_source ) {
 	$wpe_type        = sanitize_key( (string) $a['postType'] );
 	$wpe_type_object = get_post_type_object( $wpe_type );
-	if ( ! $wpe_type_object || ! $wpe_type_object->public ) {
+	if ( ! $wpe_type_object || ! is_post_type_viewable( $wpe_type_object ) ) {
 		$wpe_type = 'post';
 	}
 	$wpe_query = new WP_Query(
 		array(
 			'post_type'           => $wpe_type,
 			'post_status'         => 'publish',
+			'has_password'        => false,
 			'posts_per_page'      => min( 18, max( 1, (int) $a['postCount'] ) ),
 			'ignore_sticky_posts' => true,
 			'no_found_rows'       => true,
@@ -48,7 +50,10 @@ if ( 'wp-posts' === $wpe_source ) {
 			'title'    => get_the_title(),
 		);
 	}
-	wp_reset_postdata();
+	$GLOBALS['post'] = $wpe_caller_post; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- Restore the enclosing loop's post.
+	if ( $wpe_caller_post instanceof WP_Post ) {
+		setup_postdata( $wpe_caller_post );
+	}
 } else {
 	$wpe_items = is_array( $a['items'] ) ? array_slice( $a['items'], 0, 30 ) : array();
 	foreach ( $wpe_items as $wpe_item ) {

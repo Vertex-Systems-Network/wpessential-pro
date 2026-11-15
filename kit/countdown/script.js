@@ -27,8 +27,12 @@
 				}
 			} );
 			if ( ! root.isConnected || 0 === remaining ) {
-				if ( handle !== null ) { window.clearInterval( handle ); }
-				if ( 0 === remaining ) {
+				if ( handle !== null ) { window.clearInterval( handle ); handle = null; }
+				if ( ! root.isConnected && remaining > 0 ) {
+					// Detached: let init() start it again if the node comes back.
+					delete root.dataset.wpeCountdownReady;
+					delete root.dataset.ready;
+				} else if ( 0 === remaining ) {
 					root.dataset.expired = '1';
 					if ( completed ) { completed.hidden = false; }
 				}

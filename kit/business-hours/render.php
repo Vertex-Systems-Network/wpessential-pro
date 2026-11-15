@@ -18,7 +18,8 @@ $wpe_days     = array(
 	'saturday'  => __( 'Saturday', 'wpessential-pro' ),
 	'sunday'    => __( 'Sunday', 'wpessential-pro' ),
 );
-$wpe_today    = strtolower( wp_date( 'l', time(), wp_timezone() ) );
+// English key to match $wpe_schedule; wp_date() would translate the weekday name.
+$wpe_today    = strtolower( ( new DateTimeImmutable( 'now', wp_timezone() ) )->format( 'l' ) );
 $wpe_rows     = is_array( $a['rows'] ) ? array_slice( $a['rows'], 0, 30 ) : array();
 $wpe_schedule = array();
 foreach ( $wpe_rows as $wpe_row ) {
