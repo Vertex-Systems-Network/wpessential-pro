@@ -27,7 +27,7 @@ if (!defined('WPE_PRO_MIN_FREE_VERSION')) {
     define('WPE_PRO_MIN_FREE_VERSION', '3.0.0');
 }
 if (!defined('WPE_PRO_MAX_FREE_VERSION')) {
-    define('WPE_PRO_MAX_FREE_VERSION', '3.0.99');
+    define('WPE_PRO_MAX_FREE_VERSION', '3.99.99');
 }
 if (!defined('WPE_PRO_MIN_PLATFORM_API_VERSION')) {
     define('WPE_PRO_MIN_PLATFORM_API_VERSION', '0.1.0');
