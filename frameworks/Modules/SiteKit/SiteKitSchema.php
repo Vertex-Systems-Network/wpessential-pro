@@ -54,7 +54,20 @@ final class SiteKitSchema {
 
 	/** @return array<string,array{title:string,description:string,icon:string,fields:array<string,array<string,mixed>>}> */
 	public static function sections(): array {
+		// Abilities register on plugins_loaded and read the group ids. Translating there would
+		// load the text domain too early (WordPress 6.7+ notice), so labels stay untranslated and
+		// uncached until the theme is set up; later calls build and cache the translated schema.
+		if ( ! self::canTranslate() ) {
+			return self::build();
+		}
+
 		return self::$sections ??= self::build();
+	}
+
+	private static function canTranslate(): bool {
+		return function_exists( '__' )
+			&& function_exists( 'did_action' )
+			&& ( did_action( 'after_setup_theme' ) > 0 || doing_action( 'after_setup_theme' ) );
 	}
 
 	/** @return array<string,array<string,mixed>> Field key => field, across all groups. */
@@ -470,7 +483,7 @@ final class SiteKitSchema {
 
 	/** Translates when WordPress is loaded; the schema is also read by unit tests and tooling. */
 	private static function t( string $text ): string {
-		return function_exists( '__' ) ? __( $text, 'wpessential' ) : $text; // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- strings are literal at every call site.
+		return self::canTranslate() ? __( $text, 'wpessential' ) : $text; // phpcs:ignore WordPress.WP.I18n.NonSingularStringLiteralText -- strings are literal at every call site.
 	}
 
 	/** @return array<string,mixed> */
