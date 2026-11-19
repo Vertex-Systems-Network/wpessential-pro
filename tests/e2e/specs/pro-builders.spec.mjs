@@ -205,6 +205,10 @@ test('Pro elements: blocks and Elementor widgets are registered', async ({ page,
     const names = (await response.json()).map((block) => block.name).filter((name) => name.startsWith('wpessential'));
     expect(names.length).toBeGreaterThan(0);
   });
+  await audit('pro-elements', 'Form block renders a Contact Form 7 form', async () => {
+    const out = wp(`eval '$f = get_posts(["post_type" => "wpcf7_contact_form", "numberposts" => 1]); $id = $f ? $f[0]->ID : 0; if (!$id) { $c = WPCF7_ContactForm::get_template(["title" => "E2E"]); $c->save(); $id = $c->id(); } echo do_blocks("<!-- wp:wpessential/forms {\\"formId\\":\\"$id\\"} /-->");'`);
+    expect(out).toContain('wpcf7-form');
+  });
   await audit('pro-elements', 'Elementor widgets registered', async () => {
     const out = wp(`eval 'echo implode(",", array_filter(array_keys(\\Elementor\\Plugin::instance()->widgets_manager->get_widget_types()), fn($n) => str_contains($n, "wpe")));'`);
     expect(out.trim().length).toBeGreaterThan(0);
