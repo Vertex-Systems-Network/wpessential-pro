@@ -1,24 +1,24 @@
 {
 	"name": "forms",
-	"title": "WPForms Form (WPEssential)",
+	"title": "Form (WPEssential)",
 	"category": "content",
 	"icon": "feedback",
 	"elementor_icon": "eicon-form-horizontal",
 	"keywords": [
 		"form",
-		"wpforms",
+		"wpforms", "contact form 7",
 		"contact",
 		"newsletter"
 	],
-	"description": "Embed a published WPForms Lite form by ID, leaving validation, submissions and spam prevention to the form plugin.",
+	"description": "Embed a published WPForms Lite or Contact Form 7 form by ID, leaving validation, submissions and spam prevention to the form plugin.",
 	"panels": {
-		"content": "WPForms Lite",
+		"content": "Form",
 		"style": "Form style"
 	},
 	"attributes": {
 		"formId": {
 			"type": "text",
-			"label": "Published WPForms ID (numeric)",
+			"label": "Published WPForms or Contact Form 7 form ID (numeric)",
 			"default": "",
 			"panel": "content"
 		},
