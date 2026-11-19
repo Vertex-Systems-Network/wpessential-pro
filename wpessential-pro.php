@@ -45,6 +45,9 @@ if (!defined('WPE_PRO_SCHEMA_GENERATION')) {
     define('WPE_PRO_SCHEMA_GENERATION', 1);
 }
 
+if (!defined('WPE_PRO_FILE')) {
+    define('WPE_PRO_FILE', __FILE__);
+}
 if (!defined('WPE_PRO_PACKAGE_ACTIVE')) {
     define('WPE_PRO_PACKAGE_ACTIVE', true);
 }
@@ -112,6 +115,11 @@ $moduleClasses = [
     \WPEssential\Modules\Settings\SettingsModule::class,
     \WPEssential\Modules\Dashboard\DashboardModule::class,
     \WPEssential\Modules\Query\QueryModule::class,
+    \WPEssential\Modules\Fields\FieldsModule::class,
+    \WPEssential\Modules\Relations\RelationsModule::class,
+    \WPEssential\Modules\Status\StatusModule::class,
+    \WPEssential\Modules\AdminColumns\AdminColumnsModule::class,
+    \WPEssential\Modules\Listings\ListingsModule::class,
     \WPEssential\Modules\DashboardWidgets\DashboardWidgetsModule::class,
     \WPEssential\Modules\Profiles\ProfilesModule::class,
     \WPEssential\Modules\Membership\MembershipModule::class,

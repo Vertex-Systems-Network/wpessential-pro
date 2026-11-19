@@ -75,6 +75,10 @@ final class QueryModule implements ModuleInterface {
 
 	public function boot( ServiceRegistryInterface $services ): void {
 		$assets      = $services->get( 'platform.admin.assets' );
+		// Pro ships its own built admin assets; Free's manifest only knows the Free plugin directory.
+		if ( defined( 'WPE_PRO_FILE' ) && function_exists( 'plugins_url' ) ) {
+			$assets = new AdminAssetManifest( dirname( (string) WPE_PRO_FILE ), plugins_url( '', (string) WPE_PRO_FILE ) );
+		}
 		$dataSources = $services->get( self::DATA_SOURCE_SERVICE );
 		if ( ! $assets instanceof AdminAssetManifest || ! $dataSources instanceof DataSourceRegistryInterface ) {
 			throw new LogicException( 'Query admin requires canonical shared admin assets and Data Source Registry.' );
