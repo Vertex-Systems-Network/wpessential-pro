@@ -26,6 +26,8 @@ final class FieldAdminCatalogProjector {
 		'true_false',
 		'image',
 		'file',
+		'select',
+		'radio',
 	];
 
 	/**

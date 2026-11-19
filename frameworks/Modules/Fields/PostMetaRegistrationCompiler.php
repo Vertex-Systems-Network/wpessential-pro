@@ -30,6 +30,9 @@ final readonly class PostMetaRegistrationCompiler {
 
 	private const INTEGER_LIST_TYPES = [ 'gallery', 'file_advanced', 'posts' ];
 
+	/** Single-choice values are stored as strings; a `multiple` choice field stores a string list. */
+	private const CHOICE_TYPES = [ 'select', 'radio', 'button_group' ];
+
 	public function __construct(
 		private FieldValueNormalizer $values = new FieldValueNormalizer(),
 		private FieldValuePersistenceGuard $persistence = new FieldValuePersistenceGuard(),
@@ -131,8 +134,17 @@ final readonly class PostMetaRegistrationCompiler {
 			];
 		}
 
+		if ( in_array( $type, self::CHOICE_TYPES, true ) && ( $field['settings']['multiple'] ?? false ) === true ) {
+			return [
+				'type'      => 'array',
+				'single'    => true,
+				'item_type' => 'string',
+				'multi_row' => false,
+			];
+		}
+
 		$scalarType = match ( true ) {
-			in_array( $type, self::STRING_TYPES, true ) => 'string',
+			in_array( $type, self::STRING_TYPES, true ), in_array( $type, self::CHOICE_TYPES, true ) => 'string',
 			in_array( $type, self::BOOLEAN_TYPES, true ) => 'boolean',
 			in_array( $type, self::INTEGER_REFERENCE_TYPES, true ) => 'integer',
 			$type === 'number' || $type === 'range' => ( ( $field['settings']['integer'] ?? false ) === true ? 'integer' : 'number' ),
