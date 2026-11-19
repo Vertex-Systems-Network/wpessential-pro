@@ -379,6 +379,71 @@ function optionalNumber( raw: string, integer: boolean ): number | undefined | n
 	return integer ? Number.parseInt( trimmed, 10 ) : Number( trimmed );
 }
 
+/** Subfield types the edit-screen box renders inside a group or repeater row. */
+export const SUBFIELD_TYPES: Array< [ string, string ] > = [
+	[ 'text', 'Text' ],
+	[ 'textarea', 'Text area' ],
+	[ 'number', 'Number' ],
+	[ 'email', 'Email' ],
+	[ 'url', 'URL' ],
+	[ 'true_false', 'True / False' ],
+	[ 'date', 'Date' ],
+	[ 'color', 'Color' ],
+	[ 'image', 'Image (attachment ID)' ],
+];
+
+/** Label, key and type for each subfield of a group or repeater; edits write into field.subfields. */
+function subfieldsEditor( field: JsonObject, baseId: string ): HTMLFieldSetElement {
+	const box = el( 'fieldset', 'wpessential-fields-subfields' );
+	box.append( el( 'legend', undefined, 'Subfields' ) );
+	const list = el( 'div' );
+	box.append( list );
+	if ( ! Array.isArray( field.subfields ) ) {
+		field.subfields = [];
+	}
+	const subfields = field.subfields as JsonObject[];
+	const draw = (): void => {
+		list.replaceChildren();
+		subfields.forEach( ( sub, at ) => {
+			const row = el( 'div', 'wpessential-fields-subfield' );
+			const input = ( key: 'label' | 'key', text: string ): HTMLLabelElement => {
+				const control = el( 'input' );
+				control.type = 'text';
+				control.id = `${ baseId }-${ at }-${ key }`;
+				control.value = typeof sub[ key ] === 'string' ? ( sub[ key ] as string ) : '';
+				control.readOnly = key === 'key' && typeof sub.uuid === 'string' && sub.uuid !== '';
+				control.addEventListener( 'input', () => {
+					sub[ key ] = control.value;
+				} );
+				return labelled( text, control );
+			};
+			const current = typeof sub.type === 'string' ? sub.type : 'text';
+			const kind = selectBox( `${ baseId }-${ at }-type`, SUBFIELD_TYPES, current );
+			kind.disabled = typeof sub.uuid === 'string' && sub.uuid !== '';
+			kind.addEventListener( 'change', () => {
+				sub.type = kind.value;
+			} );
+			const remove = el( 'button', 'button-link-delete', 'Remove subfield' );
+			remove.type = 'button';
+			remove.addEventListener( 'click', () => {
+				subfields.splice( at, 1 );
+				draw();
+			} );
+			row.append( input( 'label', 'Label' ), input( 'key', 'Key' ), labelled( 'Type', kind ), remove );
+			list.append( row );
+		} );
+	};
+	const add = el( 'button', 'button', 'Add subfield' );
+	add.type = 'button';
+	add.addEventListener( 'click', () => {
+		subfields.push( { key: '', label: '', type: 'text' } );
+		draw();
+	} );
+	box.append( add );
+	draw();
+	return box;
+}
+
 /** Choices as editable text: a list prints one value per line, a map prints "value : Label". */
 export function choicesToText( choices: unknown ): string {
 	if ( Array.isArray( choices ) ) {
@@ -478,6 +543,13 @@ export function fieldSettingsPanel( field: JsonObject, index: number ): HTMLDeta
 			delete settings.maxlength;
 			setting( 'max_length' )( next );
 		} );
+	}
+	if ( type === 'group' || type === 'repeater' ) {
+		grid.append( subfieldsEditor( field, id( 'subfields' ) ) );
+		if ( type === 'repeater' ) {
+			bindNumber( 'min_rows', 'Minimum rows', settings.min_rows, true, setting( 'min_rows' ) );
+			bindNumber( 'max_rows', 'Maximum rows', settings.max_rows, true, setting( 'max_rows' ) );
+		}
 	}
 	if ( type === 'select' || type === 'radio' ) {
 		const choices = el( 'textarea' );

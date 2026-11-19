@@ -23,12 +23,12 @@ final class FieldAdminCatalogProjectorTest extends TestCase
             $byKey[$type['key']] = $type;
         }
 
-        foreach (['text', 'textarea', 'number', 'checkbox', 'date', 'time', 'datetime'] as $key) {
+        foreach (['text', 'textarea', 'number', 'checkbox', 'date', 'time', 'datetime', 'select', 'radio', 'group', 'repeater'] as $key) {
             self::assertTrue($byKey[$key]['admin_available']);
             self::assertNull($byKey[$key]['admin_unavailable_reason']);
         }
 
-        foreach (['post_object', 'taxonomy', 'user', 'repeater', 'group', 'tab'] as $key) {
+        foreach (['post_object', 'taxonomy', 'user', 'flexible_content', 'tab'] as $key) {
             self::assertFalse($byKey[$key]['admin_available']);
             self::assertIsString($byKey[$key]['admin_unavailable_reason']);
             self::assertNotSame('', $byKey[$key]['admin_unavailable_reason']);

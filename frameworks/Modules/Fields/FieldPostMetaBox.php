@@ -49,6 +49,8 @@ final class FieldPostMetaBox {
 		'file'       => 'number',
 		'select'     => 'select',
 		'radio'      => 'radio',
+		'group'      => 'group',
+		'repeater'   => 'repeater',
 	];
 
 	public function __construct(
@@ -105,6 +107,51 @@ final class FieldPostMetaBox {
 			echo '</td></tr>';
 		}
 		echo '</tbody></table>';
+	}
+
+	/**
+	 * A group shows its subfields once; a repeater shows every saved row plus one empty row to add the next.
+	 *
+	 * shortcut: rows are added one per save and removed by clearing them, upgrade to a JS add/remove/reorder UI next.
+	 *
+	 * @param array<string,mixed> $field
+	 */
+	private function renderContainer( string $type, array $field, string $id, string $name, mixed $value ): void {
+		$subfields = array_values( array_filter( (array) ( $field['subfields'] ?? [] ), static fn ( mixed $sub ): bool => is_array( $sub ) && isset( self::INPUTS[ (string) ( $sub['type'] ?? '' ) ] ) && ! in_array( $sub['type'], [ 'group', 'repeater' ], true ) ) );
+		$rows      = $type === 'group' ? [ is_array( $value ) ? $value : [] ] : array_values( array_filter( is_array( $value ) ? $value : [], 'is_array' ) );
+		if ( $type === 'repeater' ) {
+			$rows[] = [];
+		}
+		echo '<div id="' . esc_attr( $id ) . '" class="wpessential-fields-container">';
+		foreach ( $rows as $index => $row ) {
+			$rowName = $type === 'group' ? $name : $name . '[' . $index . ']';
+			echo '<fieldset class="wpessential-fields-container-row" style="border:1px solid #c3c4c7;padding:8px 12px;margin:0 0 8px">';
+			if ( $type === 'repeater' ) {
+				$legend = $index === count( $rows ) - 1 ? __( 'New row', 'wpessential' ) : sprintf( /* translators: %d: row number */ __( 'Row %d', 'wpessential' ), $index + 1 );
+				echo '<legend>' . esc_html( $legend ) . '</legend>';
+			}
+			foreach ( $subfields as $sub ) {
+				$subType = (string) $sub['type'];
+				$subKey  = (string) ( $sub['key'] ?? '' );
+				$subId   = $id . '-' . $index . '-' . $subKey;
+				$subName = $rowName . '[' . $subKey . ']';
+				$current = $row[ $subKey ] ?? null;
+				echo '<p><label for="' . esc_attr( $subId ) . '">' . esc_html( (string) ( $sub['label'] ?? $subKey ) ) . '</label><br>';
+				if ( $subType === 'textarea' ) {
+					echo '<textarea class="large-text" rows="3" id="' . esc_attr( $subId ) . '" name="' . esc_attr( $subName ) . '">' . esc_textarea( is_scalar( $current ) ? (string) $current : '' ) . '</textarea>';
+				} elseif ( self::INPUTS[ $subType ] === 'checkbox' ) {
+					echo '<input type="hidden" name="' . esc_attr( $subName ) . '" value="0"><input type="checkbox" id="' . esc_attr( $subId ) . '" name="' . esc_attr( $subName ) . '" value="1"' . checked( (bool) $current, true, false ) . '>';
+				} elseif ( $subType === 'select' || $subType === 'radio' ) {
+					$this->renderChoices( 'select', $sub, $subId, $subName, $current );
+				} else {
+					$shown = $subType === 'datetime' ? self::localDateTime( $current ) : ( is_scalar( $current ) ? (string) $current : '' );
+					echo '<input class="regular-text" type="' . esc_attr( self::INPUTS[ $subType ] ) . '" id="' . esc_attr( $subId ) . '" name="' . esc_attr( $subName ) . '" value="' . esc_attr( $shown ) . '">';
+				}
+				echo '</p>';
+			}
+			echo '</fieldset>';
+		}
+		echo '</div>';
 	}
 
 	/** @param array<string,mixed> $field */
@@ -250,6 +297,9 @@ final class FieldPostMetaBox {
 	/** Form strings in the shape the write-value Ability expects; empty means "no value". */
 	/** @param array<string,mixed> $field */
 	public static function value( string $type, mixed $raw, array $field = [] ): mixed {
+		if ( $type === 'group' || $type === 'repeater' ) {
+			return self::containerValue( $type, $raw, $field );
+		}
 		if ( $type === 'select' || $type === 'radio' ) {
 			return self::choiceValue( $field, $raw );
 		}
@@ -274,6 +324,51 @@ final class FieldPostMetaBox {
 		}
 
 		return $raw;
+	}
+
+	/**
+	 * Group: one map of subfield values. Repeater: rows that have at least one value, so the
+	 * blank "new row" and cleared rows are dropped. Empty subfields are left out of the row.
+	 *
+	 * @param array<string,mixed> $field
+	 */
+	private static function containerValue( string $type, mixed $raw, array $field ): mixed {
+		$subfields = [];
+		foreach ( (array) ( $field['subfields'] ?? [] ) as $sub ) {
+			if ( is_array( $sub ) && is_string( $sub['key'] ?? null ) ) {
+				$subfields[ $sub['key'] ] = $sub;
+			}
+		}
+		$row = static function ( mixed $posted ) use ( $subfields ): array {
+			$out = [];
+			foreach ( is_array( $posted ) ? $posted : [] as $key => $one ) {
+				$sub = $subfields[ $key ] ?? null;
+				if ( $sub === null ) {
+					continue;
+				}
+				$value = self::value( (string) ( $sub['type'] ?? 'text' ), $one, $sub );
+				// An unticked box (false) alone does not make a row worth keeping.
+				if ( $value !== null && $value !== [] ) {
+					$out[ $key ] = $value;
+				}
+			}
+
+			return $out;
+		};
+		if ( $type === 'group' ) {
+			$group = $row( $raw );
+
+			return $group === [] ? null : $group;
+		}
+		$rows = [];
+		foreach ( is_array( $raw ) ? $raw : [] as $posted ) {
+			$one = $row( $posted );
+			if ( array_filter( $one, static fn ( mixed $v ): bool => $v !== false ) !== [] ) {
+				$rows[] = $one;
+			}
+		}
+
+		return $rows === [] ? null : $rows;
 	}
 
 	/**

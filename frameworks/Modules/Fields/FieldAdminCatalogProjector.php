@@ -28,6 +28,8 @@ final class FieldAdminCatalogProjector {
 		'file',
 		'select',
 		'radio',
+		'group',
+		'repeater',
 	];
 
 	/**

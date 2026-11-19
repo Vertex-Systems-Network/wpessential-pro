@@ -134,6 +134,16 @@ final readonly class PostMetaRegistrationCompiler {
 			];
 		}
 
+		if ( $type === 'group' || $type === 'repeater' ) {
+			// One meta row holds the whole structure; the sanitizer validates every subfield.
+			return [
+				'type'      => $type === 'group' ? 'object' : 'array',
+				'single'    => true,
+				'item_type' => $type === 'group' ? null : 'object',
+				'multi_row' => false,
+			];
+		}
+
 		if ( in_array( $type, self::CHOICE_TYPES, true ) && ( $field['settings']['multiple'] ?? false ) === true ) {
 			return [
 				'type'      => 'array',
@@ -201,7 +211,12 @@ final readonly class PostMetaRegistrationCompiler {
 		}
 
 		$schema = [ 'type' => $shape['type'] ];
-		if ( $shape['type'] === 'array' ) {
+		if ( $shape['type'] === 'object' ) {
+			$schema['additionalProperties'] = true;
+		}
+		if ( $shape['type'] === 'array' && $shape['item_type'] === 'object' ) {
+			$schema['items'] = [ 'type' => 'object', 'additionalProperties' => true ];
+		} elseif ( $shape['type'] === 'array' ) {
 			$itemType = $shape['item_type'];
 			if ( ! is_string( $itemType ) || $itemType === '' ) {
 				throw new InvalidArgumentException( 'REST-visible array meta requires an explicit item schema.' );

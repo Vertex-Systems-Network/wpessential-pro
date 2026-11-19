@@ -118,6 +118,23 @@ final class PostMetaRegistrationCompilerTest extends TestCase
         self::assertSame(['schema' => ['type' => 'array', 'items' => ['type' => 'string']]], $multiple['args']['show_in_rest']);
     }
 
+    public function testCompilesGroupAndRepeaterAsOneStructuredRow(): void
+    {
+        $sub = [['key' => 'city', 'label' => 'City', 'type' => 'text']];
+        $group = $this->compiler->compile($this->field(['key' => 'address', 'type' => 'group', 'subfields' => $sub]), 'event', showInRest: true);
+        self::assertSame('object', $group['args']['type']);
+        self::assertSame(['schema' => ['type' => 'object', 'additionalProperties' => true]], $group['args']['show_in_rest']);
+        self::assertSame(['city' => 'Lahore'], ($group['args']['sanitize_callback'])(['city' => 'Lahore']));
+
+        $repeater = $this->compiler->compile($this->field(['key' => 'stops', 'type' => 'repeater', 'subfields' => $sub]), 'event', showInRest: true);
+        self::assertSame('array', $repeater['args']['type']);
+        self::assertSame(['schema' => ['type' => 'array', 'items' => ['type' => 'object', 'additionalProperties' => true]]], $repeater['args']['show_in_rest']);
+        self::assertSame([['city' => 'A'], ['city' => 'B']], ($repeater['args']['sanitize_callback'])([['city' => 'A'], ['city' => 'B']]));
+
+        $this->expectException(\InvalidArgumentException::class);
+        ($repeater['args']['sanitize_callback'])([['city' => 5]]);
+    }
+
     public function testRequiresStableIdentityAndFailsClosedForUnsupportedTypes(): void
     {
         $withoutUuid = $this->definitions->normalize([
@@ -134,8 +151,8 @@ final class PostMetaRegistrationCompilerTest extends TestCase
 
         $group = $this->field([
             'key' => 'contact',
-            'type' => 'group',
-            'subfields' => [['key' => 'name', 'label' => 'Name', 'type' => 'text']],
+            'type' => 'flexible_content',
+            
         ]);
         $this->expectException(InvalidArgumentException::class);
         $this->compiler->compile($group, 'post');

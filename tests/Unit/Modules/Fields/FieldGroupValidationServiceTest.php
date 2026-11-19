@@ -100,7 +100,7 @@ final class FieldGroupValidationServiceTest extends TestCase
         $unstored = $service->validate(['status' => 'published', 'payload' => [
             'group_key' => 'b',
             'title' => 'B',
-            'fields' => [['key' => 'address', 'label' => 'Address', 'type' => 'group', 'subfields' => [['key' => 'city', 'label' => 'City', 'type' => 'text']]]],
+            'fields' => [['key' => 'layouts', 'label' => 'Layouts', 'type' => 'flexible_content']],
             'locations' => [[['source' => 'post_type', 'operator' => 'equals', 'value' => 'post']]],
             'storage' => ['mode' => 'native_post_meta'],
         ]]);
