@@ -39,6 +39,14 @@ final class FieldPostMetaBox {
 		'date'     => 'date',
 		'time'     => 'time',
 		'datetime' => 'datetime-local',
+		'email'      => 'email',
+		'url'        => 'url',
+		'color'      => 'color',
+		'range'      => 'number',
+		'true_false' => 'checkbox',
+		// shortcut: image/file take an attachment ID, upgrade to the media modal picker later.
+		'image'      => 'number',
+		'file'       => 'number',
 	];
 
 	public function __construct(
@@ -83,11 +91,11 @@ final class FieldPostMetaBox {
 			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( (string) ( $field['label'] ?? $field['key'] ?? '' ) ) . '</label></th><td>';
 			if ( $type === 'textarea' ) {
 				echo '<textarea class="large-text" rows="4" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( is_scalar( $value ) ? (string) $value : '' ) . '</textarea>';
-			} elseif ( $type === 'checkbox' ) {
+			} elseif ( self::INPUTS[ $type ] === 'checkbox' ) {
 				echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="0"><input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="1"' . checked( (bool) $value, true, false ) . '>';
 			} else {
 				$shown = $type === 'datetime' ? self::localDateTime( $value ) : ( is_scalar( $value ) ? (string) $value : '' );
-				echo '<input class="regular-text" type="' . esc_attr( self::INPUTS[ $type ] ) . '" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $shown ) . '"' . ( $type === 'number' ? ' step="any"' : '' ) . '>';
+				echo '<input class="regular-text" type="' . esc_attr( self::INPUTS[ $type ] ) . '" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $shown ) . '"' . ( in_array( $type, [ 'number', 'range' ], true ) ? ' step="any"' : ( in_array( $type, [ 'image', 'file' ], true ) ? ' min="1" step="1"' : '' ) ) . '>';
 			}
 			if ( ! empty( $field['instructions'] ) && is_string( $field['instructions'] ) ) {
 				echo '<p class="description">' . esc_html( $field['instructions'] ) . '</p>';
@@ -196,13 +204,13 @@ final class FieldPostMetaBox {
 	/** Form strings in the shape the write-value Ability expects; empty means "no value". */
 	public static function value( string $type, mixed $raw ): mixed {
 		$raw = is_scalar( $raw ) ? trim( (string) $raw ) : '';
-		if ( $type === 'checkbox' ) {
+		if ( $type === 'checkbox' || $type === 'true_false' ) {
 			return $raw === '1';
 		}
 		if ( $raw === '' ) {
 			return null;
 		}
-		if ( $type === 'number' ) {
+		if ( in_array( $type, [ 'number', 'range', 'image', 'file' ], true ) ) {
 			return is_numeric( $raw ) ? 0 + $raw : $raw;
 		}
 		if ( $type === 'datetime' ) {
