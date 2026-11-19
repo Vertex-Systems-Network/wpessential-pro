@@ -62,7 +62,6 @@ test('Custom Fields: published group shows on the post editor and stores values'
     await expect(page.locator('tr').filter({ hasText: key })).toContainText('published');
   });
 
-  notBuilt('custom-fields', 'meta box on the post edit screen', 'docs/AUDIT-2026-11-16-FREE-PRO-MARKET.md: post meta is registered, no meta box on the edit screen yet.');
   await audit('custom-fields', 'meta registered; value saved through REST', async () => {
     postId = Number(wp(`post create --post_title="E2E fields ${RUN}" --post_status=publish --porcelain`).trim().split('\n').pop());
     const meta = await page.request.post(`${BASE}/wp-json/wp/v2/posts/${postId}`, {
@@ -71,6 +70,32 @@ test('Custom Fields: published group shows on the post editor and stores values'
     });
     expect(meta.status(), await meta.text()).toBeLessThan(400);
     expect(wp(`post meta get ${postId} e2e_subtitle_${RUN}`).trim()).toBe('hello e2e');
+  });
+
+  await audit('custom-fields', 'meta box on the post edit screen: edit, save, reload', async () => {
+    await page.goto(`${BASE}/wp-admin/post.php?post=${postId}&action=edit`);
+    // The block editor shows classic meta boxes below the content.
+    // Close the first-run welcome guide and open the collapsed "Meta Boxes" pane.
+    const welcome = page.getByRole('dialog', { name: /Welcome to the editor/ });
+    if (await welcome.isVisible({ timeout: 10_000 }).catch(() => false)) await welcome.getByRole('button', { name: 'Close' }).click();
+    const openPane = async (field) => {
+      // The pane's resize handle overlaps its toggle, so send the click to the toggle itself.
+      if (!(await field.isVisible())) await page.getByText('Meta Boxes', { exact: true }).dispatchEvent('click');
+      await expect(field).toBeVisible();
+    };
+    // Earlier runs leave groups on posts too: use this run's box.
+    const box = page.locator(`#wpessential-fields-field-group-${key.replace(/_/g, '-')}`);
+    const input = box.getByLabel('E2E subtitle');
+    await expect(input).toHaveCount(1, { timeout: 60_000 });
+    await openPane(input);
+    await expect(input).toHaveValue('hello e2e', { timeout: 60_000 });
+    await input.fill('edited in the meta box');
+    await page.getByRole('button', { name: /^(Save|Update)$/ }).first().click();
+    await expect.poll(() => wp(`post meta get ${postId} e2e_subtitle_${RUN}`).trim(), { timeout: 30_000 }).toBe('edited in the meta box');
+    await page.reload();
+    await expect(box.getByLabel('E2E subtitle')).toHaveCount(1, { timeout: 60_000 });
+    await openPane(box.getByLabel('E2E subtitle'));
+    await expect(box.getByLabel('E2E subtitle')).toHaveValue('edited in the meta box', { timeout: 60_000 });
   });
 });
 

@@ -269,6 +269,11 @@ final class FieldsModule implements ModuleInterface {
 		$services->set( 'module.custom-fields.admin', $admin );
 		$admin->register();
 		$runtimeRegistrar->register();
+
+		$definitions = $services->get( 'platform.definitions' );
+		if ( $definitions instanceof DefinitionRepositoryInterface && function_exists( 'add_action' ) ) {
+			( new FieldPostMetaBox( $definitions, new FieldGroupPostTypeTargetCompiler(), $abilities, $contexts ) )->register();
+		}
 	}
 
 	private function registerAbility(
