@@ -46,9 +46,9 @@ final readonly class FieldGroupPostMetaBinder {
 	}
 
 	/**
-	 * Binds every group that can be planned and skips the rest, so one group with no placement or an
-	 * unbound storage mode cannot stop every other Field Group from registering. Cross-group conflicts
-	 * (such as a shared meta key) still fail the whole batch before any registration.
+	 * Binds every group that can be planned and skips the rest, so one group with no placement, an
+	 * unbound storage mode or a meta key another group already claims cannot stop every other Field
+	 * Group from registering. Definitions arrive sorted, so the first group keeps a shared key.
 	 *
 	 * @param list<Definition> $definitions
 	 * @return array<string,string> skipped definition id => reason
@@ -60,6 +60,7 @@ final readonly class FieldGroupPostMetaBinder {
 
 		$registrations = [];
 		$skipped       = [];
+		$claimed       = [];
 		foreach ( $definitions as $definition ) {
 			if ( ! $definition instanceof Definition ) {
 				throw new InvalidArgumentException( 'Field Group runtime binding definitions must contain Definition objects.' );
@@ -70,9 +71,17 @@ final readonly class FieldGroupPostMetaBinder {
 				$skipped[ $definition->id ] = $error->getMessage();
 				continue;
 			}
+			$keys = [];
 			foreach ( $plan as $registration ) {
-				$registrations[] = $registration;
+				$keys[ $registration['post_type'] . "\0" . $registration['meta_key'] ] = $registration['meta_key'];
 			}
+			$taken = array_intersect_key( $keys, $claimed );
+			if ( $taken !== [] ) {
+				$skipped[ $definition->id ] = sprintf( 'Meta key "%s" is already used by another published Field Group.', reset( $taken ) );
+				continue;
+			}
+			$claimed      += $keys;
+			$registrations = array_merge( $registrations, $plan );
 		}
 
 		$this->registrar->registerBatch( $registrations );
