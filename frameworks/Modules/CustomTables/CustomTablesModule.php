@@ -72,6 +72,10 @@ final class CustomTablesModule implements ModuleInterface {
 		$dispatcher  = $services->get( 'platform.ajax.dispatcher' );
 		$gateway     = $services->get( 'platform.ajax.gateway' );
 		$assets      = $services->get( 'platform.admin.assets' );
+		// Pro ships its own built admin assets; Free's manifest only knows the Free plugin directory.
+		if ( defined( 'WPE_PRO_FILE' ) && function_exists( 'plugins_url' ) ) {
+			$assets = new AdminAssetManifest( dirname( (string) WPE_PRO_FILE ), plugins_url( '', (string) WPE_PRO_FILE ) );
+		}
 		if ( ! $dispatcher instanceof AjaxDispatcher || ! $gateway instanceof WordPressAjaxGateway ) {
 			throw new LogicException( 'Custom Tables requires the shared AJAX dispatcher and gateway.' );
 		}

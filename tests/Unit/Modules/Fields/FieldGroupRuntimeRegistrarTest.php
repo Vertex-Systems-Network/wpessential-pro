@@ -127,7 +127,7 @@ final class FieldGroupRuntimeRegistrarTest extends TestCase
         self::assertArrayNotHasKey('runtime', $runtime->errors());
     }
 
-    public function testCrossGroupStorageKeyCollisionFailsCombinedPlanBeforeFirstNativeMutation(): void
+    public function testCrossGroupStorageKeyCollisionSkipsLaterGroupAndKeepsTheFirst(): void
     {
         $repository = new InMemoryDefinitionRepository();
         $repository->save($this->definition(
@@ -157,10 +157,11 @@ final class FieldGroupRuntimeRegistrarTest extends TestCase
         $runtime->registerActive();
 
         self::assertTrue($runtime->processed());
-        self::assertSame([], $runtime->bound());
-        self::assertSame(0, $nativeCalls);
-        self::assertArrayHasKey('runtime', $runtime->errors());
-        self::assertStringContainsString('duplicate key "shared_key"', $runtime->errors()['runtime']);
+        // One conflicting group must not take every other Field Group off the site.
+        self::assertSame(['11111111-1111-4111-8111-111111111111'], $runtime->bound());
+        self::assertGreaterThan(0, $nativeCalls);
+        self::assertArrayNotHasKey('runtime', $runtime->errors());
+        self::assertStringContainsString('"shared_key" is already used', $runtime->errors()['group:22222222-2222-4222-8222-222222222222']);
     }
 
     /** @param callable(string,string,array<string,mixed>):bool $register */

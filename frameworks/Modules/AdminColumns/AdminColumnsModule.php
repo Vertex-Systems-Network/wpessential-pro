@@ -305,6 +305,14 @@ final class AdminColumnsModule implements ModuleInterface {
 		}
 
 		$assets      = $services->get( self::ADMIN_ASSET_SERVICE );
+
+		// Pro ships its own built admin assets; Free's manifest only knows the Free plugin directory.
+
+		if ( defined( 'WPE_PRO_FILE' ) && function_exists( 'plugins_url' ) ) {
+
+			$assets = new AdminAssetManifest( dirname( (string) WPE_PRO_FILE ), plugins_url( '', (string) WPE_PRO_FILE ) );
+
+		}
 		$dataSources = $services->get( self::DATA_SOURCE_SERVICE );
 		if ( ! $assets instanceof AdminAssetManifest || ! $dataSources instanceof DataSourceRegistryInterface ) {
 			throw new LogicException( 'Admin Columns admin requires canonical shared admin assets and Data Source Registry.' );

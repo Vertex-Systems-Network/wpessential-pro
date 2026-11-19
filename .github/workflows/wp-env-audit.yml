@@ -1,0 +1,92 @@
+name: WordPress E2E Audit (Free + Pro)
+
+# Every Free and Pro module, builder and option exercised in a real WordPress 6.9 / PHP 8.3 site
+# (wp-env) with Elementor, WooCommerce and Contact Form 7. The local trial entitlement stands in for
+# the 30-day trial a local site gets. Specs: Free tests/e2e/specs/wp-env + Pro tests/e2e/specs.
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      free_ref:
+        description: 'WPEssential Free branch, tag or SHA to test against'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: wp-env-audit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Check out WPEssential Free
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: Vertex-Systems-Network/wpessential
+          ref: ${{ inputs.free_ref || vars.WPE_FREE_REF || 'main' }}
+          path: .wpessential-free
+          token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
+          persist-credentials: false
+
+      - name: Place the Free checkout beside Pro
+        run: |
+          free_root="$(dirname "${GITHUB_WORKSPACE}")/wpessential"
+          rm -rf "${free_root}"
+          mv "${GITHUB_WORKSPACE}/.wpessential-free" "${free_root}"
+          echo "WPE_FREE_ROOT=${free_root}" >> "${GITHUB_ENV}"
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+
+      - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Build Free and Pro
+        run: |
+          (cd "${WPE_FREE_ROOT}" && composer install --no-dev --no-interaction --prefer-dist && npm ci --ignore-scripts && npm run build:admin)
+          npm ci --ignore-scripts
+          npm run build:admin
+
+      - name: Start WordPress
+        run: npx --yes @wordpress/env@12.1.0 start
+
+      - name: Install E2E dependencies
+        working-directory: ${{ env.WPE_FREE_ROOT }}
+        run: |
+          npm ci --prefix tests/e2e --ignore-scripts
+          ./tests/e2e/node_modules/.bin/playwright install chromium --with-deps
+
+      - name: Run audit
+        working-directory: ${{ env.WPE_FREE_ROOT }}/tests/e2e
+        env:
+          WPE_E2E_BASE_URL: http://localhost:8888
+          WPE_E2E_PRO: '1'
+          WPE_E2E_SPEC_DIRS: ${{ github.workspace }}/tests/e2e/specs
+          WPE_E2E_WP_CLI: npx --yes @wordpress/env@12.1.0 run cli wp
+          WPE_E2E_WP_ENV_DIR: ${{ github.workspace }}
+        run: npx playwright test -c playwright.wp-env.config.mjs
+
+      - name: Report
+        if: ${{ !cancelled() }}
+        working-directory: ${{ env.WPE_FREE_ROOT }}/tests/e2e
+        run: node specs/support/report.mjs >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: ${{ !cancelled() }}
+        with:
+          name: wp-env-audit-${{ github.run_id }}
+          path: ${{ env.WPE_FREE_ROOT }}/tests/e2e/test-results/
+          retention-days: 14

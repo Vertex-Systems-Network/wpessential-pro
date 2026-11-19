@@ -242,6 +242,10 @@ final class FieldsModule implements ModuleInterface {
 		$ajax             = $services->get( 'platform.ajax.dispatcher' );
 		$gateway          = $services->get( 'platform.ajax.gateway' );
 		$assets           = $services->get( 'platform.admin.assets' );
+		// Pro ships its own built admin assets; Free's manifest only knows the Free plugin directory.
+		if ( defined( 'WPE_PRO_FILE' ) && function_exists( 'plugins_url' ) ) {
+			$assets = new AdminAssetManifest( dirname( (string) WPE_PRO_FILE ), plugins_url( '', (string) WPE_PRO_FILE ) );
+		}
 		$runtimeRegistrar = $services->get( 'module.custom-fields.runtime.post-meta' );
 
 		if ( ! $abilities instanceof AbilityRegistry

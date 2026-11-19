@@ -119,6 +119,7 @@ final class DashboardWidgetsModule implements ModuleInterface {
 			name: 'Dashboard Widgets',
 			version: '0.1.0',
 			edition: 'pro',
+			dependencies: [ 'query' ], // register() reads the Query read consumer.
 		);
 	}
 

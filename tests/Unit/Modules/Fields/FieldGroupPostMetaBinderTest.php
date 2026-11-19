@@ -111,6 +111,34 @@ final class FieldGroupPostMetaBinderTest extends TestCase
         self::assertSame(0, $calls);
     }
 
+    public function testGroupReusingAnotherGroupsMetaKeyIsSkippedNotFatal(): void
+    {
+        $calls = [];
+        $binder = $this->binder(
+            static function (string $postType, string $metaKey) use (&$calls): bool {
+                $calls[] = $postType . '/' . $metaKey;
+                return true;
+            },
+        );
+        $first = $this->definition();
+        $second = new Definition(
+            id: '44444444-4444-4444-8444-444444444444',
+            slug: 'zz-catalog-copy',
+            type: $first->type,
+            schemaVersion: 1,
+            ownerSurfaceId: $first->ownerSurfaceId,
+            status: DefinitionStatus::Published,
+            payload: ['group_key' => 'catalog_copy'] + $first->payload,
+            revision: 1,
+        );
+
+        $skipped = $binder->bindPublished([$first, $second]);
+
+        self::assertSame(['44444444-4444-4444-8444-444444444444'], array_keys($skipped));
+        self::assertStringContainsString('already used by another published Field Group', $skipped[$second->id]);
+        self::assertSame(['page/headline', 'page/rating', 'post/headline', 'post/rating'], $calls);
+    }
+
     public function testGroupRestPolicyRemainsHardUpperBound(): void
     {
         $calls = [];
