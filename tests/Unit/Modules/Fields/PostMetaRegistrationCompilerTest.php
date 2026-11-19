@@ -101,6 +101,23 @@ final class PostMetaRegistrationCompilerTest extends TestCase
         self::assertSame('One', ($rowRegistration['args']['sanitize_callback'])(' One '));
     }
 
+    public function testCompilesChoiceFieldsAsStringOrStringList(): void
+    {
+        $single = $this->compiler->compile(
+            $this->field(['key' => 'size', 'type' => 'select', 'settings' => ['choices' => ['s' => 'Small', 'l' => 'Large']]]),
+            'event',
+            showInRest: true,
+        );
+        self::assertSame(['schema' => ['type' => 'string']], $single['args']['show_in_rest']);
+
+        $multiple = $this->compiler->compile(
+            $this->field(['key' => 'tags', 'type' => 'select', 'settings' => ['choices' => ['a', 'b'], 'multiple' => true]]),
+            'event',
+            showInRest: true,
+        );
+        self::assertSame(['schema' => ['type' => 'array', 'items' => ['type' => 'string']]], $multiple['args']['show_in_rest']);
+    }
+
     public function testRequiresStableIdentityAndFailsClosedForUnsupportedTypes(): void
     {
         $withoutUuid = $this->definitions->normalize([

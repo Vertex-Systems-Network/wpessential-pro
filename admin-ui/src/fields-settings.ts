@@ -379,6 +379,37 @@ function optionalNumber( raw: string, integer: boolean ): number | undefined | n
 	return integer ? Number.parseInt( trimmed, 10 ) : Number( trimmed );
 }
 
+/** Choices as editable text: a list prints one value per line, a map prints "value : Label". */
+export function choicesToText( choices: unknown ): string {
+	if ( Array.isArray( choices ) ) {
+		return choices.map( String ).join( '\n' );
+	}
+	if ( isObject( choices ) ) {
+		return Object.entries( choices )
+			.map( ( [ key, label ] ) => ( key === String( label ) ? key : `${ key } : ${ String( label ) }` ) )
+			.join( '\n' );
+	}
+	return '';
+}
+
+/** Lines without " : " keep the value as the label; undefined clears the setting. */
+export function textToChoices( raw: string ): string[] | Record< string, string > | undefined {
+	const lines = raw.split( '\n' ).map( ( line ) => line.trim() ).filter( ( line ) => line !== '' );
+	if ( lines.length === 0 ) {
+		return undefined;
+	}
+	if ( ! lines.some( ( line ) => line.includes( ' : ' ) ) ) {
+		return lines;
+	}
+	const map: Record< string, string > = {};
+	for ( const line of lines ) {
+		const at = line.indexOf( ' : ' );
+		const key = at === -1 ? line : line.slice( 0, at ).trim();
+		map[ key ] = at === -1 ? line : line.slice( at + 3 ).trim();
+	}
+	return map;
+}
+
 /**
  * Settings for one field: required, REST, the type's value rules and cloning.
  * Changes are written straight into the field object the editor saves.
@@ -448,7 +479,20 @@ export function fieldSettingsPanel( field: JsonObject, index: number ): HTMLDeta
 			setting( 'max_length' )( next );
 		} );
 	}
-	if ( type === 'number' ) {
+	if ( type === 'select' || type === 'radio' ) {
+		const choices = el( 'textarea' );
+		choices.id = id( 'choices' );
+		choices.rows = 4;
+		choices.value = choicesToText( settings.choices );
+		choices.addEventListener( 'input', () => {
+			setting( 'choices' )( textToChoices( choices.value ) );
+		} );
+		grid.append( labelled( 'Choices', choices, 'One per line. Use "value : Label" to store a value that differs from its label.' ) );
+		if ( type === 'select' ) {
+			bindTick( 'multiple', 'Allow several choices', settings.multiple === true, setting( 'multiple' ) );
+		}
+	}
+	if ( type === 'number' || type === 'range' ) {
 		bindTick( 'integer', 'Whole numbers only', settings.integer === true, setting( 'integer' ) );
 		bindNumber( 'min', 'Minimum value', settings.min, false, setting( 'min' ) );
 		bindNumber( 'max', 'Maximum value', settings.max, false, setting( 'max' ) );

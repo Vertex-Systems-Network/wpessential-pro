@@ -47,6 +47,8 @@ final class FieldPostMetaBox {
 		// shortcut: image/file take an attachment ID, upgrade to the media modal picker later.
 		'image'      => 'number',
 		'file'       => 'number',
+		'select'     => 'select',
+		'radio'      => 'radio',
 	];
 
 	public function __construct(
@@ -105,6 +107,50 @@ final class FieldPostMetaBox {
 		echo '</tbody></table>';
 	}
 
+	/** @param array<string,mixed> $field */
+	private function renderChoices( string $type, array $field, string $id, string $name, mixed $value ): void {
+		$choices  = self::choices( $field );
+		$multiple = $type === 'select' && ( $field['settings']['multiple'] ?? false ) === true;
+		$selected = array_map( 'strval', is_array( $value ) ? $value : ( $value === null ? [] : [ $value ] ) );
+		if ( $type === 'radio' ) {
+			echo '<fieldset id="' . esc_attr( $id ) . '">';
+			foreach ( $choices as $key => $label ) {
+				echo '<label><input type="radio" name="' . esc_attr( $name ) . '" value="' . esc_attr( (string) $key ) . '"' . checked( in_array( (string) $key, $selected, true ), true, false ) . '> ' . esc_html( $label ) . '</label><br>';
+			}
+			echo '</fieldset>';
+			return;
+		}
+		echo '<select id="' . esc_attr( $id ) . '" name="' . esc_attr( $name . ( $multiple ? '[]' : '' ) ) . '"' . ( $multiple ? ' multiple' : '' ) . '>';
+		if ( ! $multiple ) {
+			echo '<option value="">' . esc_html__( '— Select —', 'wpessential' ) . '</option>';
+		}
+		foreach ( $choices as $key => $label ) {
+			echo '<option value="' . esc_attr( (string) $key ) . '"' . selected( in_array( (string) $key, $selected, true ), true, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		echo '</select>';
+	}
+
+	/**
+	 * Choice value => label; a list of choices uses each value as its own label.
+	 *
+	 * @param array<string,mixed> $field
+	 * @return array<int|string,string>
+	 */
+	public static function choices( array $field ): array {
+		$choices = $field['settings']['choices'] ?? [];
+		if ( ! is_array( $choices ) ) {
+			return [];
+		}
+		$out = [];
+		foreach ( $choices as $key => $label ) {
+			$value         = array_is_list( $choices ) ? $label : $key;
+			$out[ is_scalar( $value ) ? (string) $value : '' ] = is_scalar( $label ) ? (string) $label : (string) $value;
+		}
+		unset( $out[''] );
+
+		return $out;
+	}
+
 	public function save( int $postId, mixed $post = null ): void {
 		if ( ! isset( $_POST[ self::NONCE ], $_POST['wpe_fields'] ) || ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) || wp_is_post_revision( $postId ) ) {
 			return;
@@ -127,9 +173,9 @@ final class FieldPostMetaBox {
 			if ( $group === null ) {
 				continue;
 			}
-			$types = array_column( (array) ( $group->payload['fields'] ?? [] ), 'type', 'uuid' );
+			$byUuid = array_column( (array) ( $group->payload['fields'] ?? [] ), null, 'uuid' );
 			foreach ( $fields as $uuid => $raw ) {
-				$type = $types[ $uuid ] ?? '';
+				$type = (string) ( $byUuid[ $uuid ]['type'] ?? '' );
 				if ( ! is_string( $uuid ) || ! isset( self::INPUTS[ $type ] ) ) {
 					continue;
 				}
@@ -141,7 +187,7 @@ final class FieldPostMetaBox {
 							'field_uuid'              => $uuid,
 							'post_id'                 => $postId,
 							'expected_group_revision' => (int) ( $revisions[ $groupId ] ?? $group->revision ),
-							'value'                   => self::value( $type, $raw ),
+							'value'                   => self::value( $type, $raw, $byUuid[ $uuid ] ),
 						],
 						$this->context(),
 					);
@@ -202,7 +248,11 @@ final class FieldPostMetaBox {
 	}
 
 	/** Form strings in the shape the write-value Ability expects; empty means "no value". */
-	public static function value( string $type, mixed $raw ): mixed {
+	/** @param array<string,mixed> $field */
+	public static function value( string $type, mixed $raw, array $field = [] ): mixed {
+		if ( $type === 'select' || $type === 'radio' ) {
+			return self::choiceValue( $field, $raw );
+		}
 		$raw = is_scalar( $raw ) ? trim( (string) $raw ) : '';
 		if ( $type === 'checkbox' || $type === 'true_false' ) {
 			return $raw === '1';
@@ -224,6 +274,29 @@ final class FieldPostMetaBox {
 		}
 
 		return $raw;
+	}
+
+	/**
+	 * Posted strings mapped back to the declared choice values, so integer keys keep their type.
+	 *
+	 * @param array<string,mixed> $field
+	 */
+	private static function choiceValue( array $field, mixed $raw ): mixed {
+		$declared = $field['settings']['choices'] ?? [];
+		$declared = is_array( $declared ) ? ( array_is_list( $declared ) ? $declared : array_keys( $declared ) ) : [];
+		$map      = [];
+		foreach ( $declared as $choice ) {
+			if ( is_scalar( $choice ) ) {
+				$map[ (string) $choice ] = $choice;
+			}
+		}
+		$pick = static fn ( mixed $one ): mixed => is_scalar( $one ) ? ( $map[ (string) $one ] ?? (string) $one ) : null;
+		if ( ( $field['settings']['multiple'] ?? false ) === true ) {
+			return array_values( array_filter( array_map( $pick, is_array( $raw ) ? $raw : [] ), static fn ( mixed $v ): bool => $v !== null && $v !== '' ) );
+		}
+		$one = $pick( is_scalar( $raw ) ? trim( (string) $raw ) : '' );
+
+		return $one === '' ? null : $one;
 	}
 
 	/** Stored UTC instant shown as the site's local time for a datetime-local input. */

@@ -26,6 +26,18 @@ final class FieldPostMetaBoxTest extends TestCase
         self::assertSame('2026-11-19T10:30:00+00:00', FieldPostMetaBox::value('datetime', '2026-11-19T10:30'));
     }
 
+    public function testChoiceValuesKeepTheirDeclaredType(): void
+    {
+        $map = ['settings' => ['choices' => [1 => 'One', 'b' => 'Bee']]];
+        self::assertSame(1, FieldPostMetaBox::value('select', '1', $map));
+        self::assertSame('b', FieldPostMetaBox::value('radio', 'b', $map));
+        self::assertNull(FieldPostMetaBox::value('select', '', $map));
+        $multi = ['settings' => ['choices' => ['red', 'blue'], 'multiple' => true]];
+        self::assertSame(['red', 'blue'], FieldPostMetaBox::value('select', ['red', '', 'blue'], $multi));
+        self::assertSame(['red' => 'red', 'blue' => 'blue'], FieldPostMetaBox::choices($multi));
+        self::assertSame(['1' => 'One', 'b' => 'Bee'], FieldPostMetaBox::choices($map));
+    }
+
     public function testStoredDateTimeIsShownForDatetimeLocal(): void
     {
         self::assertSame('2026-11-19T10:30', FieldPostMetaBox::localDateTime('2026-11-19T10:30:00Z'));

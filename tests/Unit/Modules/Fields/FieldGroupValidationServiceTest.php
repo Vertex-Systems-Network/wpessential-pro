@@ -97,15 +97,15 @@ final class FieldGroupValidationServiceTest extends TestCase
         self::assertTrue($draft['valid']);
 
         // A placed group whose field type has no post-meta storage shape would be skipped at runtime.
-        $choice = $service->validate(['status' => 'published', 'payload' => [
+        $unstored = $service->validate(['status' => 'published', 'payload' => [
             'group_key' => 'b',
             'title' => 'B',
-            'fields' => [['key' => 'color', 'label' => 'Color', 'type' => 'select']],
+            'fields' => [['key' => 'address', 'label' => 'Address', 'type' => 'group', 'subfields' => [['key' => 'city', 'label' => 'City', 'type' => 'text']]]],
             'locations' => [[['source' => 'post_type', 'operator' => 'equals', 'value' => 'post']]],
             'storage' => ['mode' => 'native_post_meta'],
         ]]);
-        self::assertFalse($choice['valid']);
-        self::assertContains('runtime_binding_unsupported', array_column($choice['issues'], 'id'));
+        self::assertFalse($unstored['valid']);
+        self::assertContains('runtime_binding_unsupported', array_column($unstored['issues'], 'id'));
     }
 
     /** @param array<string,mixed> $payload */
