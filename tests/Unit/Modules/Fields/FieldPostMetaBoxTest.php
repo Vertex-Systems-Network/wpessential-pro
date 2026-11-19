@@ -17,6 +17,10 @@ final class FieldPostMetaBoxTest extends TestCase
         self::assertSame('hello', FieldPostMetaBox::value('text', ' hello '));
         self::assertSame(3, FieldPostMetaBox::value('number', '3'));
         self::assertSame(2.5, FieldPostMetaBox::value('number', '2.5'));
+        self::assertTrue(FieldPostMetaBox::value('true_false', '1'));
+        self::assertSame(7, FieldPostMetaBox::value('image', '7'));
+        self::assertSame(4.5, FieldPostMetaBox::value('range', '4.5'));
+        self::assertSame('a@b.co', FieldPostMetaBox::value('email', 'a@b.co'));
         self::assertSame('2026-11-19', FieldPostMetaBox::value('date', '2026-11-19'));
         // Without WordPress the site timezone falls back to UTC.
         self::assertSame('2026-11-19T10:30:00+00:00', FieldPostMetaBox::value('datetime', '2026-11-19T10:30'));

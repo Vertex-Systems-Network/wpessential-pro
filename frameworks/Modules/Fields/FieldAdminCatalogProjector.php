@@ -19,6 +19,13 @@ final class FieldAdminCatalogProjector {
 		'date',
 		'time',
 		'datetime',
+		'email',
+		'url',
+		'color',
+		'range',
+		'true_false',
+		'image',
+		'file',
 	];
 
 	/**
