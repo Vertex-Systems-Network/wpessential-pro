@@ -29,7 +29,7 @@ final class ExistingStatusOverrides implements AbilityHandlerInterface {
 
 	public const DEFINITION_TYPE = 'status-existing-override';
 	public const ABILITY         = 'wpessential/status/existing-override';
-	private const PAGE_SLUG      = 'wpessential-existing-statuses';
+	private const PAGE_SLUG      = 'wpessential-module-status';
 	private const ACTION         = 'wpessential_existing_statuses';
 
 	/** Core statuses editors see. Draft and Published can be renamed but never hidden. */
@@ -61,15 +61,23 @@ final class ExistingStatusOverrides implements AbilityHandlerInterface {
 		);
 	}
 
-	public function registerAdmin( AbilityRegistry $abilities, WordPressExecutionContextFactory $contexts, string $parentSlug ): void {
+	public function registerAdmin( AbilityRegistry $abilities, WordPressExecutionContextFactory $contexts ): void {
 		$this->abilities = $abilities;
 		$this->contexts  = $contexts;
-		add_action(
-			'admin_menu',
-			function () use ( $parentSlug ): void {
-				add_submenu_page( $parentSlug, __( 'Existing statuses', 'wpessential' ), __( 'Existing statuses', 'wpessential' ), 'manage_options', self::PAGE_SLUG, [ $this, 'renderPage' ] );
+		// Shown on the module's own settings page, not as a separate menu page.
+		add_filter(
+			'wpessential_module_page_sections',
+			function ( mixed $html, mixed $module ): mixed {
+				if ( $module !== 'status' || ! is_string( $html ) ) {
+					return $html;
+				}
+				ob_start();
+				$this->renderPage();
+
+				return $html . (string) ob_get_clean();
 			},
-			20,
+			10,
+			2,
 		);
 		add_action( 'admin_post_' . self::ACTION, [ $this, 'handleForm' ] );
 	}
@@ -264,7 +272,7 @@ final class ExistingStatusOverrides implements AbilityHandlerInterface {
 		$notice    = isset( $_GET['wpe_notice'] ) ? sanitize_key( wp_unslash( (string) $_GET['wpe_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only notice.
 		$overrides = $this->overrides();
 		$types     = get_post_types( [ 'show_ui' => true ], 'objects' );
-		echo '<div class="wrap"><h1>' . esc_html__( 'Existing statuses', 'wpessential' ) . '</h1>';
+		echo '<section class="wpe-ui-panel" aria-labelledby="wpessential-status-existing"><h2 id="wpessential-status-existing">' . esc_html__( 'Existing statuses', 'wpessential' ) . '</h2>';
 		echo '<p class="description">' . esc_html__( 'Rename the statuses WordPress ships with, or hide Pending, Private and Scheduled on post types that do not use them. Status keys and existing posts never change.', 'wpessential' ) . '</p>';
 		if ( $notice === 'saved' ) {
 			echo '<div class="notice notice-success"><p>' . esc_html__( 'Saved.', 'wpessential' ) . '</p></div>';
@@ -296,7 +304,7 @@ final class ExistingStatusOverrides implements AbilityHandlerInterface {
 		submit_button( __( 'Save changes', 'wpessential' ), 'primary', 'submit', false );
 		echo ' ';
 		submit_button( __( 'Revert to original', 'wpessential' ), 'secondary', 'revert', false );
-		echo '</form></div>';
+		echo '</form></section>';
 	}
 
 	private static function uuid(): string {

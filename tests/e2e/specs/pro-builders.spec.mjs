@@ -6,7 +6,7 @@ const body = (page) => page.locator('#wpbody-content');
 
 test('Custom Fields: every field type with every setting', async ({ page, audit }) => {
   test.setTimeout(1_800_000);
-  await openAdmin(page, 'wpessential-fields');
+  await openAdmin(page, 'wpessential-fields&view=edit');
   const types = (await page.locator('#wpessential-fields-add-type option').evaluateAll((options) => options.map((o) => o.value))).filter(Boolean);
   const root = page.locator('#wpessential-fields-root');
 
@@ -16,7 +16,7 @@ test('Custom Fields: every field type with every setting', async ({ page, audit 
   for (const type of types.filter((value) => !options.find((o) => o.value === value).off)) {
     const key = `e2e_${type}_${RUN}`;
     await audit('custom-fields', `field type: ${type} (every setting, save, reload)`, async () => {
-      await openAdmin(page, 'wpessential-fields');
+      await openAdmin(page, 'wpessential-fields&view=edit');
       await page.locator('#wpessential-fields-add-type').selectOption(type);
       await page.getByRole('button', { name: 'Add field' }).click();
       await fillAll(root, {
@@ -32,6 +32,8 @@ test('Custom Fields: every field type with every setting', async ({ page, audit 
       expect(await root.getByText(/^blocked:/).allInnerTexts(), 'validation report').toEqual([]);
       await openAdmin(page, 'wpessential-fields');
       await page.locator('tr').filter({ hasText: key }).getByRole('button', { name: 'Edit' }).click();
+      await page.waitForURL(/view=edit/);
+      await expect(root).toHaveAttribute('data-wpessential-enhanced', 'ready');
       expect(changed(entered, await snapshot(root), /fields-(id|revision|add-type|group-key)$/)).toEqual([]);
     });
   }
@@ -43,7 +45,7 @@ test('Custom Fields: published group shows on the post editor and stores values'
   let postId = 0;
 
   await audit('custom-fields', 'publish a group placed on posts', async () => {
-    await openAdmin(page, 'wpessential-fields');
+    await openAdmin(page, 'wpessential-fields&view=edit');
     await page.locator('#wpessential-fields-group-key').fill(key);
     await page.locator('#wpessential-fields-group-title').fill('E2E box');
     await page.locator('#wpessential-fields-add-type').selectOption('text');

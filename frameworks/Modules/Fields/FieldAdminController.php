@@ -10,6 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use InvalidArgumentException;
 use Throwable;
+use WPEssential\Contracts\DefinitionRepositoryInterface;
 use WPEssential\Platform\Abilities\AbilityRegistry;
 use WPEssential\Platform\Admin\AdminAssetManifest;
 use WPEssential\Platform\Admin\PlatformAdminController;
@@ -33,6 +34,7 @@ final class FieldAdminController {
 		private readonly AdminAssetManifest $assets,
 		private readonly FieldAdminCatalogProjector $catalogProjector,
 		private readonly string $ajaxAction,
+		private readonly ?DefinitionRepositoryInterface $definitions = null,
 	) {
 		if ( trim( $this->ajaxAction ) === '' ) {
 			throw new InvalidArgumentException( 'Fields admin AJAX action cannot be blank.' );
@@ -104,6 +106,12 @@ final class FieldAdminController {
 		}
 
 		[$definitions, $catalog, $readError] = $this->readSnapshot();
+		// List and editor are separate screens, like the post type builder.
+		$editing = isset( $_GET['view'] ) && sanitize_key( wp_unslash( (string) $_GET['view'] ) ) === 'edit'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- routing only.
+		$editId  = isset( $_GET['definition'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['definition'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- routing only.
+		$notice  = isset( $_GET['wpe_notice'] ) ? sanitize_text_field( wp_unslash( (string) $_GET['wpe_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only notice.
+		$listUrl = function_exists( 'admin_url' ) ? admin_url( 'admin.php?page=' . self::PAGE_SLUG ) : '';
+		$editUrl = $listUrl . '&view=edit';
 		$bootstrap                           = [
 			'surface'     => 'custom-fields',
 			'ajaxUrl'     => function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : '',
@@ -132,6 +140,16 @@ final class FieldAdminController {
 			],
 			'definitions' => $definitions,
 			'catalog'     => $catalog,
+			'view'        => $editing ? 'edit' : 'list',
+			'editId'      => $editId,
+			'listUrl'     => $listUrl,
+			'editUrl'     => $editUrl,
+			'values'      => [
+				'ajaxUrl' => function_exists( 'admin_url' ) ? admin_url( 'admin-ajax.php' ) : '',
+				'action'  => FieldValuesBrowser::AJAX_ACTION,
+				'nonce'   => function_exists( 'wp_create_nonce' ) ? wp_create_nonce( FieldValuesBrowser::AJAX_ACTION ) : '',
+			],
+			'listMeta'    => $editing ? [] : $this->listMeta( $definitions ),
 			// Choices for the "Show this group when" value pickers; posts are searched through REST.
 			'locations'   => self::locationChoices(),
 		];
@@ -148,9 +166,14 @@ final class FieldAdminController {
 		if ( $readError !== null ) {
 			echo '<div class="notice notice-error inline" role="alert"><p>' . esc_html( $readError ) . '</p></div>';
 		}
-		echo '<div id="wpessential-fields-notice" class="notice inline" role="status" aria-live="polite" hidden><p></p></div>';
-		$this->renderEditor( $catalog );
-		$this->renderDefinitions( $definitions );
+		echo '<div id="wpessential-fields-notice" class="notice inline' . ( $notice !== '' ? ' notice-success' : '' ) . '" role="status" aria-live="polite"' . ( $notice !== '' ? '' : ' hidden' ) . '><p>' . esc_html( $notice ) . '</p></div>';
+		if ( $editing ) {
+			echo '<p><a class="button" href="' . esc_url( $listUrl ) . '">' . esc_html__( '← All field groups', 'wpessential' ) . '</a></p>';
+			$this->renderEditor( $catalog );
+		} else {
+			echo '<p><a class="button button-primary" id="wpessential-fields-add-new" href="' . esc_url( $editUrl ) . '">' . esc_html__( 'Add field group', 'wpessential' ) . '</a></p>';
+			$this->renderDefinitions( $definitions, $this->listMeta( $definitions ) );
+		}
 		echo '<noscript><p class="notice notice-warning inline">' . esc_html__( 'JavaScript is required to create or edit Field Groups. Saved groups remain readable below.', 'wpessential' ) . '</p></noscript>';
 		echo '</section>';
 		echo '<script id="wpessential-fields-bootstrap" type="application/json">' . $json . '</script>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- JSON encoded with JSON_HEX_* flags.
@@ -208,25 +231,102 @@ final class FieldAdminController {
 		echo '</form></section>';
 	}
 
-	/** @param list<array<string,mixed>> $definitions */
-	private function renderDefinitions( array $definitions ): void {
+	/**
+	 * Attached-to summary, saved-values count and dependents count per group id.
+	 *
+	 * @param list<array<string,mixed>> $definitions
+	 * @return array<string,array{attached:string,values:int,dependencies:int}>
+	 */
+	private function listMeta( array $definitions ): array {
+		static $cache = null;
+		if ( is_array( $cache ) ) {
+			return $cache;
+		}
+		$counts = [];
+		try {
+			$result = $this->abilities->execute( FieldValuesBrowser::ABILITY, [ 'action' => 'counts' ], $this->uiContext() );
+			$counts = is_array( $result ) ? $result : [];
+		} catch ( \Throwable ) {
+			$counts = [];
+		}
+		$choices = self::locationChoices();
+		$cache   = [];
+		foreach ( $definitions as $definition ) {
+			$id = is_string( $definition['id'] ?? null ) ? $definition['id'] : '';
+			try {
+				$dependents = $this->definitions?->dependentsOf( $id ) ?? [];
+			} catch ( \Throwable ) {
+				$dependents = [];
+			}
+			$cache[ $id ] = [
+				'attached'     => self::attachedTo( is_array( $definition['payload'] ?? null ) ? $definition['payload'] : [], $choices ),
+				'values'       => is_int( $counts[ $id ] ?? null ) ? $counts[ $id ] : 0,
+				'dependencies' => count( $dependents ),
+			];
+		}
+
+		return $cache;
+	}
+
+	/**
+	 * "Pages (2 posts) or Categories" style summary of where a group shows.
+	 *
+	 * @param array<string,mixed> $payload
+	 * @param array<string,mixed> $choices
+	 */
+	public static function attachedTo( array $payload, array $choices ): string {
+		$objects = [
+			'entity_id' => 'posts',
+			'term'      => 'terms',
+			'user'      => 'users',
+		];
+		$groups  = [];
+		foreach ( (array) ( $payload['locations'] ?? [] ) as $group ) {
+			$parts = [];
+			foreach ( (array) $group as $rule ) {
+				$source = (string) ( $rule['source'] ?? '' );
+				$values = array_map( 'strval', is_array( $rule['value'] ?? null ) ? $rule['value'] : [ $rule['value'] ?? '' ] );
+				$not    = ( ( $rule['negate'] ?? false ) === true ) !== in_array( $rule['operator'] ?? '', [ 'not_equals', 'not_in' ], true );
+				if ( isset( $objects[ $source ] ) ) {
+					$parts[] = sprintf( '(%s%d %s)', $not ? 'not ' : '', count( $values ), $objects[ $source ] );
+					continue;
+				}
+				$labels  = array_column( is_array( $choices[ $source ] ?? null ) ? $choices[ $source ] : [], 1, 0 );
+				$parts[] = ( $not ? 'not ' : '' ) . implode( ', ', array_map( static fn ( string $value ): string => (string) ( $labels[ $value ] ?? $value ), $values ) );
+			}
+			if ( $parts !== [] ) {
+				$groups[] = implode( ' ', $parts );
+			}
+		}
+
+		return $groups === [] ? '—' : implode( ' or ', $groups );
+	}
+
+	/**
+	 * @param list<array<string,mixed>> $definitions
+	 * @param array<string,array{attached:string,values:int,dependencies:int}> $meta
+	 */
+	private function renderDefinitions( array $definitions, array $meta = [] ): void {
 		echo '<section class="wpessential-fields-panel" aria-labelledby="wpessential-fields-list-title">';
 		echo '<div class="wpessential-fields-list-heading"><h2 id="wpessential-fields-list-title">' . esc_html__( 'Saved field groups', 'wpessential' ) . '</h2>';
 		echo '<button type="button" class="button" id="wpessential-fields-refresh">' . esc_html__( 'Refresh', 'wpessential' ) . '</button></div>';
 		echo '<table class="widefat striped" aria-label="' . esc_attr__( 'Saved Field Groups', 'wpessential' ) . '"><thead><tr>';
-		echo '<th scope="col">' . esc_html__( 'Title', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Key', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Fields', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Status', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Revision', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Actions', 'wpessential' ) . '</th></tr></thead>';
+		echo '<th scope="col">' . esc_html__( 'Title', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Key', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Attached to', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Fields', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Saved values', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Dependencies', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Status', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Revision', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Actions', 'wpessential' ) . '</th></tr></thead>';
 		echo '<tbody id="wpessential-fields-definitions">';
 		foreach ( $definitions as $definition ) {
-			$this->renderDefinitionRow( $definition );
+			$this->renderDefinitionRow( $definition, $meta[ is_string( $definition['id'] ?? null ) ? $definition['id'] : '' ] ?? [] );
 		}
 		if ( $definitions === [] ) {
-			echo '<tr><td colspan="6">' . esc_html__( 'No Field Groups have been created yet.', 'wpessential' ) . '</td></tr>';
+			echo '<tr><td colspan="9">' . esc_html__( 'No Field Groups have been created yet.', 'wpessential' ) . '</td></tr>';
 		}
 		echo '</tbody></table></section>';
 	}
 
-	/** @param array<string,mixed> $definition */
-	private function renderDefinitionRow( array $definition ): void {
+	/**
+	 * @param array<string,mixed> $definition
+	 * @param array{attached?:string,values?:int,dependencies?:int} $meta
+	 */
+	private function renderDefinitionRow( array $definition, array $meta = [] ): void {
 		$payload  = is_array( $definition['payload'] ?? null ) ? $definition['payload'] : [];
 		$id       = is_string( $definition['id'] ?? null ) ? $definition['id'] : '';
 		$title    = is_string( $payload['title'] ?? null ) ? $payload['title'] : '';
@@ -236,7 +336,11 @@ final class FieldAdminController {
 		$revision = is_int( $definition['revision'] ?? null ) ? $definition['revision'] : 0;
 
 		echo '<tr data-wpessential-fields-definition="' . esc_attr( $id ) . '">';
-		echo '<td><strong>' . esc_html( $title ) . '</strong></td><td><code>' . esc_html( $key ) . '</code></td><td>' . esc_html( (string) $fields ) . '</td><td>' . esc_html( ucfirst( $status ) ) . '</td><td>' . esc_html( (string) $revision ) . '</td><td>';
+		$values = (int) ( $meta['values'] ?? 0 );
+		echo '<td><strong>' . esc_html( $title ) . '</strong></td><td><code>' . esc_html( $key ) . '</code></td><td>' . esc_html( (string) ( $meta['attached'] ?? '' ) ) . '</td><td>' . esc_html( (string) $fields ) . '</td>';
+		echo '<td><button type="button" class="button-link" data-wpessential-fields-values="' . esc_attr( $id ) . '" aria-label="' . esc_attr( sprintf( /* translators: 1: count, 2: group title. */ __( '%1$d saved values of %2$s', 'wpessential' ), $values, $title ) ) . '">' . esc_html( (string) $values ) . '</button></td>';
+		echo '<td>' . esc_html( (string) (int) ( $meta['dependencies'] ?? 0 ) ) . '</td>';
+		echo '<td>' . \WPEssential\Modules\CustomPostTypes\CustomPostTypeAdminController::statusPill( $status ) . '</td><td>' . esc_html( (string) $revision ) . '</td><td>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- StatusPill escapes.
 		echo '<button type="button" class="button button-small" data-wpessential-fields-edit="' . esc_attr( $id ) . '">' . esc_html__( 'Edit', 'wpessential' ) . '</button> ';
 		if ( $status === 'published' ) {
 			echo '<button type="button" class="button button-small" data-wpessential-fields-status="disabled" data-wpessential-fields-id="' . esc_attr( $id ) . '">' . esc_html__( 'Disable', 'wpessential' ) . '</button> ';

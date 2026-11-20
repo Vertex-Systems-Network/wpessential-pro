@@ -144,7 +144,7 @@ final class FieldTermUserScreens implements AbilityHandlerInterface {
 	}
 
 	public function renderTermAdd( string $taxonomy ): void {
-		$groups = $this->groupsFor( 'term', [ $taxonomy ] );
+		$groups = $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [] ] );
 		if ( $groups === [] ) {
 			return;
 		}
@@ -154,16 +154,28 @@ final class FieldTermUserScreens implements AbilityHandlerInterface {
 	}
 
 	public function renderTermEdit( object $term, string $taxonomy ): void {
-		$this->renderGroups( $this->groupsFor( 'term', [ $taxonomy ] ), 'term', (int) $term->term_id );
+		$this->renderGroups( $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [ (string) ( $term->term_id ?? '' ) ] ] ), 'term', (int) $term->term_id );
 	}
 
 	public function renderUser( object $user ): void {
-		$groups = $this->groupsFor( 'user', array_values( (array) ( $user->roles ?? [] ) ) );
+		$roles  = array_values( array_map( 'strval', (array) ( $user->roles ?? [] ) ) );
+		$groups = $this->matching( $this->groupsFor( 'user', $roles ), [ 'user_role' => $roles, 'user' => [ (string) ( $user->ID ?? '' ) ] ] );
 		foreach ( $groups as $group ) {
 			echo '<h2>' . esc_html( (string) ( $group->payload['title'] ?? '' ) ) . '</h2><table class="form-table" role="presentation"><tbody>';
 			$this->renderGroups( [ $group ], 'user', (int) $user->ID );
 			echo '</tbody></table>';
 		}
+	}
+
+	/**
+	 * Groups whose location rules (specific terms or users included) match the screen.
+	 *
+	 * @param list<Definition> $groups
+	 * @param array<string,list<string>> $context
+	 * @return list<Definition>
+	 */
+	private function matching( array $groups, array $context ): array {
+		return array_values( array_filter( $groups, static fn ( Definition $group ): bool => FieldLocationMatcher::matches( (array) ( $group->payload['locations'] ?? [] ), $context ) ) );
 	}
 
 	/** @param list<Definition> $groups */

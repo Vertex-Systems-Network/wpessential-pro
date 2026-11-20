@@ -30,7 +30,7 @@ final class CoreEmailOverrides implements AbilityHandlerInterface {
 
 	public const DEFINITION_TYPE = 'email-core-override';
 	public const ABILITY         = 'wpessential/emails/core-override';
-	private const PAGE_SLUG      = 'wpessential-core-emails';
+	private const PAGE_SLUG      = 'wpessential-module-emails';
 	private const ACTION         = 'wpessential_core_emails';
 
 	/** Email key => [label, can be turned off]. */
@@ -71,15 +71,23 @@ final class CoreEmailOverrides implements AbilityHandlerInterface {
 		add_filter( 'notify_moderator', fn ( bool $send ): bool => $send && ! $this->off( 'comment_moderation' ) );
 	}
 
-	public function registerAdmin( AbilityRegistry $abilities, WordPressExecutionContextFactory $contexts, string $parentSlug ): void {
+	public function registerAdmin( AbilityRegistry $abilities, WordPressExecutionContextFactory $contexts ): void {
 		$this->abilities = $abilities;
 		$this->contexts  = $contexts;
-		add_action(
-			'admin_menu',
-			function () use ( $parentSlug ): void {
-				add_submenu_page( $parentSlug, __( 'Core emails', 'wpessential' ), __( 'Core emails', 'wpessential' ), 'manage_options', self::PAGE_SLUG, [ $this, 'renderPage' ] );
+		// Shown on the module's own settings page, not as a separate menu page.
+		add_filter(
+			'wpessential_module_page_sections',
+			function ( mixed $html, mixed $module ): mixed {
+				if ( $module !== 'emails' || ! is_string( $html ) ) {
+					return $html;
+				}
+				ob_start();
+				$this->renderPage();
+
+				return $html . (string) ob_get_clean();
 			},
-			20,
+			10,
+			2,
 		);
 		add_action( 'admin_post_' . self::ACTION, [ $this, 'handleForm' ] );
 	}
@@ -226,7 +234,7 @@ final class CoreEmailOverrides implements AbilityHandlerInterface {
 		}
 		$notice    = isset( $_GET['wpe_notice'] ) ? sanitize_key( wp_unslash( (string) $_GET['wpe_notice'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only notice.
 		$overrides = $this->overrides();
-		echo '<div class="wrap"><h1>' . esc_html__( 'Core emails', 'wpessential' ) . '</h1>';
+		echo '<section class="wpe-ui-panel" aria-labelledby="wpessential-emails-existing"><h2 id="wpessential-emails-existing">' . esc_html__( 'Core emails', 'wpessential' ) . '</h2>';
 		echo '<p class="description">' . esc_html__( 'Reword or turn off the emails WordPress sends. Leave a box empty to keep the WordPress text. Placeholders: {original} (the WordPress text), {site_name}, {site_url}, and {reset_link} for the password reset email.', 'wpessential' ) . '</p>';
 		if ( $notice === 'saved' ) {
 			echo '<div class="notice notice-success"><p>' . esc_html__( 'Saved.', 'wpessential' ) . '</p></div>';
@@ -253,7 +261,7 @@ final class CoreEmailOverrides implements AbilityHandlerInterface {
 		submit_button( __( 'Save changes', 'wpessential' ), 'primary', 'submit', false );
 		echo ' ';
 		submit_button( __( 'Revert to original', 'wpessential' ), 'secondary', 'revert', false );
-		echo '</form></div>';
+		echo '</form></section>';
 	}
 
 	private static function uuid(): string {
