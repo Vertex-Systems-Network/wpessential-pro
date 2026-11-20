@@ -11,6 +11,52 @@ const LOCATION_SOURCES: [ string, string ][] = [
 	[ 'user_role', 'User role (user meta)' ],
 ];
 const ANCHOR_SOURCES = [ 'post_type', 'taxonomy', 'user_role' ];
+// Each storage mode offers only the rule sources that can place it.
+const SOURCES_BY_MODE: Record< string, string[] > = {
+	native_post_meta: [ 'post_type', 'post_status', 'entity_id' ],
+	native_term_meta: [ 'taxonomy' ],
+	native_user_meta: [ 'user_role' ],
+};
+const PLACEHOLDER_BY_MODE: Record< string, string > = {
+	native_post_meta: 'book (comma-separated for "is one of")',
+	native_term_meta: 'category (comma-separated for "is one of")',
+	native_user_meta: 'author (comma-separated for "is one of")',
+};
+
+function storageMode(): string {
+	const box = document.getElementById( 'wpessential-fields-storage-mode' );
+	return box instanceof HTMLSelectElement && box.value !== '' ? box.value : 'native_post_meta';
+}
+
+/** Sources for the current storage mode; a saved source outside them stays so editing never drops it. */
+function sourcesFor( mode: string, keep = '' ): [ string, string ][] {
+	const allowed = SOURCES_BY_MODE[ mode ] ?? SOURCES_BY_MODE.native_post_meta ?? [];
+	return LOCATION_SOURCES.filter( ( [ key ] ) => allowed.includes( key ) || key === keep );
+}
+
+/** Rebuilds every rule's source list after the storage mode changes. */
+function syncSources(): void {
+	const mode = storageMode();
+	const allowed = SOURCES_BY_MODE[ mode ] ?? SOURCES_BY_MODE.native_post_meta ?? [];
+	for ( const row of document.querySelectorAll< HTMLElement >( '.wpessential-fields-location-rule' ) ) {
+		const source = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="source"]' );
+		const input = row.querySelector< HTMLInputElement >( '[data-wpessential-fields-rule="value"]' );
+		if ( ! source ) {
+			continue;
+		}
+		const next = allowed.includes( source.value ) ? source.value : ( allowed[ 0 ] ?? 'post_type' );
+		source.replaceChildren();
+		for ( const [ key, label ] of sourcesFor( mode ) ) {
+			const option = el( 'option', undefined, label );
+			option.value = key;
+			source.append( option );
+		}
+		source.value = next;
+		if ( input ) {
+			input.placeholder = PLACEHOLDER_BY_MODE[ mode ] ?? PLACEHOLDER_BY_MODE.native_post_meta ?? '';
+		}
+	}
+}
 const LOCATION_OPERATORS: [ string, string ][] = [
 	[ 'equals', 'is' ],
 	[ 'not_equals', 'is not' ],
@@ -111,7 +157,10 @@ function text( object: JsonObject, key: string, fallback: string ): string {
 
 function locationRow( rule: JsonObject ): HTMLDivElement {
 	const row = el( 'div', 'wpessential-fields-location-rule' );
-	const source = selectBox( '', LOCATION_SOURCES, text( rule, 'source', 'post_type' ) );
+	const mode = storageMode();
+	const saved = text( rule, 'source', '' );
+	const sources = sourcesFor( mode, saved );
+	const source = selectBox( '', sources, saved !== '' ? saved : ( sources[ 0 ]?.[ 0 ] ?? 'post_type' ) );
 	source.dataset.wpessentialFieldsRule = 'source';
 	source.setAttribute( 'aria-label', 'Rule source' );
 	const operator = selectBox( '', LOCATION_OPERATORS, text( rule, 'operator', 'equals' ) );
@@ -121,7 +170,7 @@ function locationRow( rule: JsonObject ): HTMLDivElement {
 	input.type = 'text';
 	input.dataset.wpessentialFieldsRule = 'value';
 	input.setAttribute( 'aria-label', 'Rule value' );
-	input.placeholder = 'book (comma-separated for "is one of")';
+	input.placeholder = PLACEHOLDER_BY_MODE[ mode ] ?? PLACEHOLDER_BY_MODE.native_post_meta ?? '';
 	const raw = rule.value;
 	input.value = Array.isArray( raw ) ? raw.join( ', ' ) : raw === undefined || raw === null ? '' : String( raw );
 	const negate = el( 'input' );
@@ -203,7 +252,10 @@ function collectLocations( host: HTMLElement ): JsonObject[][] {
 			}
 			if ( ! rules.some( isPostTypeAnchor ) ) {
 				throw new Error(
-					'Each rule group needs a "Post type", "Taxonomy" or "User role" rule with "is" or "is one of" so the fields know where to appear.'
+					{
+						native_term_meta: 'Each rule group needs a "Taxonomy is" or "Taxonomy is one of" rule so the fields know where to appear.',
+						native_user_meta: 'Each rule group needs a "User role is" or "User role is one of" rule so the fields know where to appear.',
+					}[ storageMode() ] ?? 'Each rule group needs a "Post type is" or "Post type is one of" rule so the fields know where to appear.'
 				);
 			}
 			groups.push( rules );
@@ -295,6 +347,8 @@ export function mountGroupSettings( form: HTMLElement ): void {
 	} else {
 		form.prepend( panel );
 	}
+
+	document.getElementById( 'wpessential-fields-storage-mode' )?.addEventListener( 'change', syncSources );
 
 	const collapsible = document.getElementById( 'wpessential-fields-collapsible' );
 	collapsible?.addEventListener( 'change', () => {
