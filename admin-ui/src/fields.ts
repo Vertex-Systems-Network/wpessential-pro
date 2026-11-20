@@ -32,6 +32,7 @@ type Bootstrap = {
 		validate: Route;
 		save: Route;
 		status: Route;
+		lifecycle?: Route;
 	};
 	definitions: GroupDefinition[];
 	catalog: JsonObject & { types: CatalogType[] };
@@ -43,6 +44,19 @@ type Bootstrap = {
 	values?: { ajaxUrl: string; action: string; nonce: string };
 	listMeta?: Record< string, { attached: string; values: number; dependencies: number } >;
 };
+
+// Free's list-table toolkit (ui.js on every WPEssential screen), so this list matches the CPT list.
+type LifecycleDef = { id: string; status: string; revision: number; payload: Record< string, unknown > };
+interface FreeUi {
+	enhanceTable( table: HTMLTableElement, options: JsonObject ): void;
+	rowActions( definition: LifecycleDef ): HTMLElement;
+	markRow( row: HTMLElement, definition: LifecycleDef ): void;
+	statusCell( status: string ): HTMLTableCellElement;
+	runLifecycle( action: string, definitions: LifecycleDef[], ctx: { noun: { one: string; many: string }; send: ( action: string, definition: LifecycleDef ) => Promise< void > } ): Promise< number >;
+	BULK_ACTIONS: ( view: string ) => Array< [ string, string ] >;
+	LIFECYCLE_VIEWS: unknown[];
+}
+const UI = ( window as unknown as { wpessentialUi?: FreeUi } ).wpessentialUi;
 
 // Row extras (attached to, saved values, dependents) from the page load; kept across list refreshes.
 let LIST_META: NonNullable< Bootstrap[ 'listMeta' ] > = {};
@@ -465,6 +479,22 @@ function renderDefinitions( definitions: GroupDefinition[] ): void {
 		count.dataset.wpessentialFieldsValues = definition.id;
 		count.textContent = String( meta.values );
 		count.setAttribute( 'aria-label', `${ meta.values } saved values of ${ title.textContent }` );
+		if ( UI ) {
+			UI.markRow( row, definition );
+			add( title );
+			add( key );
+			add( meta.attached );
+			add( String( Array.isArray( rawFields ) ? rawFields.length : 0 ) );
+			add( count );
+			add( String( meta.dependencies ) );
+			row.append( UI.statusCell( definition.status ) );
+			add( String( definition.revision ) );
+			const cell = document.createElement( 'td' );
+			cell.append( UI.rowActions( definition ) );
+			row.append( cell );
+			host.append( row );
+			continue;
+		}
 		const pill = document.createElement( 'span' );
 		pill.className = `wpe-ui-pill wpe-ui-pill--${ PILL_TONES[ definition.status ] ?? 'off' }`;
 		pill.textContent = definition.status.charAt( 0 ).toUpperCase() + definition.status.slice( 1 );
@@ -889,9 +919,61 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 		clearValidation();
 	} );
 
+	const DONE: Record< string, string > = { publish: 'published', disable: 'disabled', lock: 'locked', unlock: 'unlocked', trash: 'moved to the Trash', restore: 'restored', delete: 'deleted permanently' };
+	const lifecycle = ( action: string, ids: string[] ): void => {
+		const chosen = definitions.filter( ( item ) => ids.includes( item.id ) );
+		if ( ! UI || chosen.length === 0 ) {
+			return;
+		}
+		void run( async () => {
+			const changed = await UI.runLifecycle( action, chosen, {
+				noun: { one: 'field group', many: 'field groups' },
+				send: async ( next, definition ) => {
+					if ( next === 'publish' || next === 'disable' ) {
+						await post( bootstrap, bootstrap.routes.status, { id: definition.id, expected_revision: definition.revision, status: next === 'publish' ? 'published' : 'disabled' } );
+						return;
+					}
+					if ( bootstrap.routes.lifecycle ) {
+						await post( bootstrap, bootstrap.routes.lifecycle, { id: definition.id, expected_revision: definition.revision, action: next } );
+					}
+				},
+			} );
+			if ( changed > 0 ) {
+				await refresh();
+				setNotice( `${ changed } field group${ changed === 1 ? '' : 's' } ${ DONE[ action ] ?? 'changed' }.` );
+			}
+		} );
+	};
+	const table = document.getElementById( 'wpessential-fields-table' );
+	if ( UI && table instanceof HTMLTableElement ) {
+		UI.enhanceTable( table, {
+			rowSelector: '[data-wpessential-fields-definition]',
+			itemsLabel: 'Field Groups',
+			views: UI.LIFECYCLE_VIEWS,
+			bulk: { actions: UI.BULK_ACTIONS, run: lifecycle, idOf: ( row: HTMLTableRowElement ) => row.dataset.wpeRowId ?? '' },
+			filters: [
+				{ column: 2, label: 'Attached to' },
+				{ column: 6, label: 'Status' },
+			],
+			sortable: [ { column: 0 }, { column: 1 }, { column: 3, numeric: true }, { column: 4, numeric: true }, { column: 5, numeric: true }, { column: 6 }, { column: 7, numeric: true } ],
+		} );
+	}
+
 	root.addEventListener( 'click', ( event ) => {
 		const target = event.target;
 		if ( ! ( target instanceof HTMLButtonElement ) ) {
+			return;
+		}
+		const rowAction = target.dataset.wpeRowAction;
+		if ( rowAction ) {
+			const id = target.dataset.wpeRowId ?? '';
+			if ( rowAction === 'edit' ) {
+				if ( bootstrap.editUrl ) {
+					window.location.href = `${ bootstrap.editUrl }&definition=${ encodeURIComponent( id ) }`;
+				}
+				return;
+			}
+			lifecycle( rowAction, [ id ] );
 			return;
 		}
 		const action = target.dataset.wpessentialFieldsAction;

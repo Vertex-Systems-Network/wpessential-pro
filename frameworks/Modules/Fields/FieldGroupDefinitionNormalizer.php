@@ -25,6 +25,8 @@ final readonly class FieldGroupDefinitionNormalizer {
 		'storage',
 		'show_in_rest',
 		'revision_policy',
+		'locked',
+		'trashed',
 	];
 
 	private const LOCATION_SOURCES = [
@@ -41,6 +43,13 @@ final readonly class FieldGroupDefinitionNormalizer {
 		'settings_page',
 		'custom_table',
 		'frontend_context',
+		'post_format',
+		'post_parent',
+		'post_term',
+		'term_parent',
+		'user_screen',
+		'current_user_role',
+		'current_user',
 	];
 
 	private const LOCATION_OPERATORS = [ 'equals', 'not_equals', 'in', 'not_in' ];
@@ -116,7 +125,27 @@ final readonly class FieldGroupDefinitionNormalizer {
 			'storage'         => $this->storage( $payload['storage'] ?? [] ),
 			'show_in_rest'    => $showInRest,
 			'revision_policy' => $this->revisionPolicy( $payload['revision_policy'] ?? 'disabled' ),
-		];
+		] + self::flags( $payload );
+	}
+
+	/**
+	 * List-table lifecycle flags, kept only when on.
+	 *
+	 * @param array<string,mixed> $payload
+	 * @return array<string,true>
+	 */
+	private static function flags( array $payload ): array {
+		$out = [];
+		foreach ( [ 'locked', 'trashed' ] as $flag ) {
+			if ( array_key_exists( $flag, $payload ) && ! is_bool( $payload[ $flag ] ) ) {
+				throw new InvalidArgumentException( sprintf( 'Field Group %s must be boolean.', $flag ) );
+			}
+			if ( ( $payload[ $flag ] ?? false ) === true ) {
+				$out[ $flag ] = true;
+			}
+		}
+
+		return $out;
 	}
 
 	/** @param array<string,mixed> $payload */

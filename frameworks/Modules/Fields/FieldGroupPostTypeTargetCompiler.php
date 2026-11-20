@@ -12,7 +12,8 @@ use InvalidArgumentException;
 
 final readonly class FieldGroupPostTypeTargetCompiler {
 
-	private const ALLOWED_SOURCES = [ 'post_type', 'post_status', 'entity_id' ];
+	// Besides post_type, these only narrow where a group shows; they never add post types.
+	private const ALLOWED_SOURCES = [ 'post_type', 'post_status', 'entity_id', 'page_template', 'post_format', 'post_parent', 'post_term', 'current_user_role', 'current_user' ];
 	private const OPERATORS       = [ 'equals', 'not_equals', 'in', 'not_in' ];
 
 	/**

@@ -67,11 +67,9 @@ final class FieldPostMetaBox {
 	}
 
 	public function addBoxes( string $postType, mixed $post = null ): void {
-		$context = [ 'post_type' => [ $postType ] ];
-		if ( $post instanceof WP_Post ) {
-			$context['post_status'] = [ (string) $post->post_status ];
-			$context['entity_id']   = [ (string) $post->ID ];
-		}
+		$context = $post instanceof WP_Post
+			? FieldLocationMatcher::postContext( (int) $post->ID, $postType, (string) $post->post_status )
+			: [ 'post_type' => [ $postType ] ] + FieldLocationMatcher::currentUser();
 		foreach ( $this->groupsFor( $postType ) as $group ) {
 			if ( ! FieldLocationMatcher::matches( (array) ( $group->payload['locations'] ?? [] ), $context ) ) {
 				continue;

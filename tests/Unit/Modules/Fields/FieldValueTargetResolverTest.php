@@ -81,7 +81,7 @@ final class FieldValueTargetResolverTest extends TestCase
         $repository = new InMemoryDefinitionRepository();
         $repository->save($this->definition(DefinitionStatus::Published, [
             [['source' => 'post_type', 'operator' => 'equals', 'value' => 'book']],
-            [['source' => 'page_template', 'operator' => 'equals', 'value' => 'special.php']],
+            [['source' => 'media_mime', 'operator' => 'equals', 'value' => 'image/png']],
         ]));
 
         $this->expectException(LogicException::class);
