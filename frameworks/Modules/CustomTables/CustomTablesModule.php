@@ -138,6 +138,23 @@ final class CustomTablesModule implements ModuleInterface {
 		$admin = new CustomTablesAdminController( $dispatcher, $assets, $definitions, $gateway->action() );
 		$services->set( 'module.custom-tables.admin', $admin );
 		$admin->register();
+
+		$builder = new CustomTablesTableBuilder( $definitions );
+		$abilities->register(
+			new AbilityDescriptor(
+				name: CustomTablesTableBuilder::ABILITY,
+				ownerSurfaceId: TableDefinitionCompiler::OWNER_SURFACE_ID,
+				capability: self::CAPABILITY,
+				mutates: true,
+				channels: self::CHANNELS,
+				inputSchema: [ 'type' => 'object' ],
+				outputSchema: [ 'type' => 'object' ],
+			),
+			$builder,
+		);
+		if ( function_exists( 'add_action' ) ) {
+			$builder->register( $abilities, $contexts );
+		}
 		CustomTablesCapabilities::register();
 	}
 
