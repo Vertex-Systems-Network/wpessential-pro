@@ -67,7 +67,15 @@ final class FieldPostMetaBox {
 	}
 
 	public function addBoxes( string $postType, mixed $post = null ): void {
+		$context = [ 'post_type' => [ $postType ] ];
+		if ( $post instanceof WP_Post ) {
+			$context['post_status'] = [ (string) $post->post_status ];
+			$context['entity_id']   = [ (string) $post->ID ];
+		}
 		foreach ( $this->groupsFor( $postType ) as $group ) {
+			if ( ! FieldLocationMatcher::matches( (array) ( $group->payload['locations'] ?? [] ), $context ) ) {
+				continue;
+			}
 			add_meta_box(
 				'wpessential-fields-' . sanitize_key( $group->slug ),
 				(string) ( $group->payload['title'] ?? $group->slug ),

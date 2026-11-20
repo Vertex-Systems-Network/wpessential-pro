@@ -6,16 +6,23 @@ type JsonObject = Record< string, unknown >;
 const LOCATION_SOURCES: [ string, string ][] = [
 	[ 'post_type', 'Post type' ],
 	[ 'post_status', 'Post status' ],
-	[ 'entity_id', 'Specific post ID' ],
 	[ 'taxonomy', 'Taxonomy (term meta)' ],
 	[ 'user_role', 'User role (user meta)' ],
 ];
 const ANCHOR_SOURCES = [ 'post_type', 'taxonomy', 'user_role' ];
 // Each storage mode offers only the rule sources that can place it.
 const SOURCES_BY_MODE: Record< string, string[] > = {
-	native_post_meta: [ 'post_type', 'post_status', 'entity_id' ],
+	native_post_meta: [ 'post_type', 'post_status' ],
 	native_term_meta: [ 'taxonomy' ],
 	native_user_meta: [ 'user_role' ],
+};
+
+// A rule on these sources can be narrowed to specific objects, saved as a second "is one of" rule.
+const OBJECT_SOURCES: Record< string, { source: string; label: string; kind: string; ids: boolean } > = {
+	post_type: { source: 'entity_id', label: 'Only these posts (optional)', kind: 'post', ids: false },
+	post_status: { source: 'entity_id', label: 'Only these posts (optional)', kind: 'post', ids: false },
+	taxonomy: { source: 'term', label: 'Only these terms (optional)', kind: 'term', ids: true },
+	user_role: { source: 'user', label: 'Only these users (optional)', kind: 'user', ids: true },
 };
 
 let CHOICES: Record< string, [ string, string ][] > = {};
@@ -237,7 +244,82 @@ function text( object: JsonObject, key: string, fallback: string ): string {
 	return typeof raw === 'string' ? raw : fallback;
 }
 
-function locationRow( rule: JsonObject ): HTMLDivElement {
+/** Optional specific posts / terms / users for a rule, found through REST search; plus typed IDs for terms and users. */
+function objectPicker( source: string, current: string[] ): HTMLSpanElement {
+	const box = el( 'span', 'wpessential-fields-object-picker' );
+	const spec = OBJECT_SOURCES[ source ];
+	if ( ! spec ) {
+		return box;
+	}
+	const search = el( 'input' );
+	search.type = 'search';
+	search.placeholder = `Type to search ${ spec.kind }s…`;
+	search.setAttribute( 'aria-label', `Search ${ spec.kind }s` );
+	const select = el( 'select' );
+	select.multiple = true;
+	select.size = 4;
+	select.dataset.wpessentialFieldsRule = 'objects';
+	select.setAttribute( 'aria-label', spec.label );
+	const add = ( id: string, label: string, chosen: boolean ): void => {
+		if ( select.querySelector( `option[value="${ CSS.escape( id ) }"]` ) ) {
+			return;
+		}
+		const option = el( 'option', undefined, label );
+		option.value = id;
+		option.selected = chosen;
+		select.append( option );
+	};
+	const ids = el( 'input' );
+	ids.type = 'text';
+	ids.dataset.wpessentialFieldsRule = 'ids';
+	ids.placeholder = 'Custom IDs, e.g. 12, 40';
+	ids.setAttribute( 'aria-label', `Custom ${ spec.kind } IDs` );
+	if ( spec.ids ) {
+		ids.value = current.join( ', ' );
+	} else {
+		for ( const id of current ) {
+			add( id, `#${ id }`, true );
+		}
+	}
+	let timer = 0;
+	search.addEventListener( 'input', () => {
+		const term = search.value.trim();
+		if ( SEARCH === null || term.length < 2 ) {
+			return;
+		}
+		window.clearTimeout( timer );
+		const endpoint = SEARCH;
+		timer = window.setTimeout( async () => {
+			const base = spec.kind === 'user' ? endpoint.url.replace( /search\/?$/, 'users' ) : endpoint.url;
+			const query = spec.kind === 'user' ? 'context=edit&per_page=20' : `type=${ spec.kind }&per_page=20`;
+			const url = `${ base }${ base.includes( '?' ) ? '&' : '?' }${ query }&search=${ encodeURIComponent( term ) }`;
+			const response = await fetch( url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': endpoint.nonce } } );
+			const results: unknown = response.ok ? await response.json() : [];
+			for ( const item of Array.isArray( results ) ? results : [] ) {
+				if ( isObject( item ) && typeof item.id === 'number' ) {
+					const name = typeof item.title === 'string' ? item.title : typeof item.name === 'string' ? item.name : '';
+					const kind = typeof item.subtype === 'string' ? item.subtype : spec.kind;
+					add( String( item.id ), `${ name } (#${ item.id }, ${ kind })`, false );
+				}
+			}
+		}, 300 );
+	} );
+	const label = el( 'span', 'description', spec.label );
+	box.append( label, search, select );
+	if ( spec.ids ) {
+		box.append( ids );
+	}
+	return box;
+}
+
+function pickedObjects( row: HTMLElement ): string[] {
+	const select = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="objects"]' );
+	const typed = row.querySelector< HTMLInputElement >( '[data-wpessential-fields-rule="ids"]' )?.value ?? '';
+	const ids = [ ...( select ? Array.from( select.selectedOptions, ( option ) => option.value ) : [] ), ...typed.split( ',' ).map( ( id ) => id.trim() ) ];
+	return [ ...new Set( ids.filter( ( id ) => /^\d+$/.test( id ) ) ) ];
+}
+
+function locationRow( rule: JsonObject, objects: string[] = [] ): HTMLDivElement {
 	const row = el( 'div', 'wpessential-fields-location-rule' );
 	const mode = storageMode();
 	const saved = text( rule, 'source', '' );
@@ -255,12 +337,18 @@ function locationRow( rule: JsonObject ): HTMLDivElement {
 	let shownSource = source.value;
 	const rebuild = (): void => {
 		// Values of another source (a post type is not a role) are dropped when the source changes.
-		const keep = source.value === shownSource ? pickedValues( row ) : [];
+		const same = source.value === shownSource;
+		const keep = same ? pickedValues( row ) : [];
+		const keepObjects = same ? pickedObjects( row ) : [];
 		shownSource = source.value;
 		const next = valuePicker( source.value, operator.value, keep );
 		picker.replaceWith( next );
 		picker = next;
+		const nextObjects = objectPicker( source.value, keepObjects );
+		objectBox.replaceWith( nextObjects );
+		objectBox = nextObjects;
 	};
+	let objectBox = objectPicker( source.value, objects );
 	source.addEventListener( 'change', rebuild );
 	operator.addEventListener( 'change', rebuild );
 	const negate = el( 'input' );
@@ -275,13 +363,23 @@ function locationRow( rule: JsonObject ): HTMLDivElement {
 	const remove = el( 'button', 'button-link', 'Remove' );
 	remove.type = 'button';
 	remove.dataset.wpessentialFieldsRuleAction = 'remove';
-	row.append( source, operator, picker, negateLabel, and, remove );
+	row.append( source, operator, picker, negateLabel, and, remove, objectBox );
 	return row;
 }
 
 function locationGroup( rules: JsonObject[] ): HTMLDivElement {
 	const group = el( 'div', 'wpessential-fields-location-group' );
-	for ( const rule of rules.length > 0 ? rules : [ {} ] ) {
+	// A specific-objects rule right after its anchor rule is edited on that rule's row.
+	const list = rules.length > 0 ? rules : [ {} ];
+	for ( let index = 0; index < list.length; index++ ) {
+		const rule = list[ index ] ?? {};
+		const next = list[ index + 1 ];
+		const spec = OBJECT_SOURCES[ text( rule, 'source', '' ) ];
+		if ( spec && next && next.source === spec.source && next.operator === 'in' && next.negate !== true && Array.isArray( next.value ) ) {
+			group.append( locationRow( rule, next.value.map( String ) ) );
+			index++;
+			continue;
+		}
 		group.append( locationRow( rule ) );
 	}
 	return group;
@@ -317,12 +415,18 @@ function collectLocations( host: HTMLElement ): JsonObject[][] {
 			const part = ( key: string ): HTMLInputElement | HTMLSelectElement | null =>
 				row.querySelector( `[data-wpessential-fields-rule="${ key }"]` );
 			const operator = part( 'operator' )?.value ?? 'equals';
+			const source = part( 'source' )?.value ?? 'post_type';
 			rules.push( {
-				source: part( 'source' )?.value ?? 'post_type',
+				source,
 				operator,
 				value: MULTI_OPERATORS.includes( operator ) ? pickedValues( row ) : ( pickedValues( row )[ 0 ] ?? '' ),
 				negate: ( part( 'negate' ) as HTMLInputElement | null )?.checked ?? false,
 			} );
+			const objects = pickedObjects( row );
+			const spec = OBJECT_SOURCES[ source ];
+			if ( spec && objects.length > 0 ) {
+				rules.push( { source: spec.source, operator: 'in', value: objects, negate: false } );
+			}
 		}
 		if ( rules.length > 0 ) {
 			// Checked here because the server accepts these but runtime binding rejects them.
