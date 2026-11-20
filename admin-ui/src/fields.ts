@@ -36,7 +36,17 @@ type Bootstrap = {
 	definitions: GroupDefinition[];
 	catalog: JsonObject & { types: CatalogType[] };
 	locations?: unknown;
+	view?: 'list' | 'edit';
+	editId?: string;
+	listUrl?: string;
+	editUrl?: string;
+	values?: { ajaxUrl: string; action: string; nonce: string };
+	listMeta?: Record< string, { attached: string; values: number; dependencies: number } >;
 };
+
+// Row extras (attached to, saved values, dependents) from the page load; kept across list refreshes.
+let LIST_META: NonNullable< Bootstrap[ 'listMeta' ] > = {};
+const PILL_TONES: Record< string, string > = { published: 'running', draft: 'waiting', disabled: 'off', archived: 'locked' };
 type ValidationIssue = {
 	severity: string;
 	message: string;
@@ -428,7 +438,7 @@ function renderDefinitions( definitions: GroupDefinition[] ): void {
 	if ( definitions.length === 0 ) {
 		const row = document.createElement( 'tr' );
 		const cell = document.createElement( 'td' );
-		cell.colSpan = 6;
+		cell.colSpan = 9;
 		cell.textContent = 'No Field Groups have been created yet.';
 		row.append( cell );
 		host.append( row );
@@ -437,19 +447,35 @@ function renderDefinitions( definitions: GroupDefinition[] ): void {
 
 	for ( const definition of definitions ) {
 		const row = document.createElement( 'tr' );
+		row.dataset.wpessentialFieldsDefinition = definition.id;
 		const rawFields = definition.payload.fields;
-		const values = [
-			stringValue( definition.payload, 'title' ),
-			stringValue( definition.payload, 'group_key' ),
-			String( Array.isArray( rawFields ) ? rawFields.length : 0 ),
-			definition.status,
-			String( definition.revision ),
-		];
-		for ( const value of values ) {
+		const meta = LIST_META[ definition.id ] ?? { attached: '', values: 0, dependencies: 0 };
+		const add = ( content: string | Node ): void => {
 			const cell = document.createElement( 'td' );
-			cell.textContent = value;
+			cell.append( content );
 			row.append( cell );
-		}
+		};
+		const title = document.createElement( 'strong' );
+		title.textContent = stringValue( definition.payload, 'title' );
+		const key = document.createElement( 'code' );
+		key.textContent = stringValue( definition.payload, 'group_key' );
+		const count = document.createElement( 'button' );
+		count.type = 'button';
+		count.className = 'button-link';
+		count.dataset.wpessentialFieldsValues = definition.id;
+		count.textContent = String( meta.values );
+		count.setAttribute( 'aria-label', `${ meta.values } saved values of ${ title.textContent }` );
+		const pill = document.createElement( 'span' );
+		pill.className = `wpe-ui-pill wpe-ui-pill--${ PILL_TONES[ definition.status ] ?? 'off' }`;
+		pill.textContent = definition.status.charAt( 0 ).toUpperCase() + definition.status.slice( 1 );
+		add( title );
+		add( key );
+		add( meta.attached );
+		add( String( Array.isArray( rawFields ) ? rawFields.length : 0 ) );
+		add( count );
+		add( String( meta.dependencies ) );
+		add( pill );
+		add( String( definition.revision ) );
 
 		const actions = document.createElement( 'td' );
 		const edit = makeActionButton( 'Edit', 'edit-definition' );
@@ -472,6 +498,141 @@ function renderDefinitions( definitions: GroupDefinition[] ): void {
 		}
 		row.append( actions );
 		host.append( row );
+	}
+}
+
+type ValueRow = { object_id: number; object: string; key: string; label: string; value: string; editable: boolean };
+
+async function valuesCall( config: NonNullable< Bootstrap[ 'values' ] >, payload: JsonObject ): Promise< JsonObject > {
+	const body = new URLSearchParams( { action: config.action, _ajax_nonce: config.nonce, payload: JSON.stringify( payload ) } );
+	const response = await fetch( config.ajaxUrl, { method: 'POST', credentials: 'same-origin', body } );
+	const json: unknown = await response.json();
+	if ( ! isObject( json ) || json.success !== true || ! isObject( json.data ) ) {
+		const data = isObject( json ) && isObject( json.data ) ? json.data : {};
+		throw new Error( typeof data.message === 'string' ? data.message : 'Saved values request failed.' );
+	}
+	return json.data;
+}
+
+/** Modal table of a group's saved values: select rows, then update their values or delete them. */
+async function openValues( config: NonNullable< Bootstrap[ 'values' ] >, group: GroupDefinition ): Promise< void > {
+	const dialog = document.createElement( 'dialog' );
+	dialog.className = 'wpessential-fields-values-dialog';
+	dialog.setAttribute( 'aria-labelledby', 'wpessential-fields-values-title' );
+	const heading = document.createElement( 'h2' );
+	heading.id = 'wpessential-fields-values-title';
+	heading.textContent = `Saved values: ${ stringValue( group.payload, 'title' ) }`;
+	const status = document.createElement( 'p' );
+	status.setAttribute( 'role', 'status' );
+	status.textContent = 'Loading…';
+	const table = document.createElement( 'table' );
+	table.className = 'widefat striped';
+	const close = document.createElement( 'button' );
+	close.type = 'button';
+	close.className = 'button';
+	close.textContent = 'Close';
+	close.addEventListener( 'click', () => dialog.close() );
+	const update = document.createElement( 'button' );
+	update.type = 'button';
+	update.className = 'button button-primary';
+	update.textContent = 'Update selected';
+	const remove = document.createElement( 'button' );
+	remove.type = 'button';
+	remove.className = 'button';
+	remove.textContent = 'Delete selected';
+	const bar = document.createElement( 'p' );
+	bar.append( update, ' ', remove, ' ', close );
+	dialog.append( heading, status, table, bar );
+	dialog.addEventListener( 'close', () => dialog.remove() );
+	document.body.append( dialog );
+	dialog.showModal();
+
+	const selected = (): HTMLTableRowElement[] =>
+		Array.from( table.querySelectorAll< HTMLTableRowElement >( 'tbody tr' ) ).filter( ( row ) => row.querySelector< HTMLInputElement >( 'input[type=checkbox]' )?.checked );
+	const item = ( row: HTMLTableRowElement ): JsonObject => ( {
+		object_id: Number( row.dataset.objectId ),
+		key: row.dataset.key ?? '',
+		value: row.querySelector< HTMLInputElement >( 'input[type=text]' )?.value ?? '',
+	} );
+	const load = async (): Promise< void > => {
+		const data = await valuesCall( config, { action: 'list', group_id: group.id } );
+		const rows = ( Array.isArray( data.rows ) ? data.rows : [] ) as ValueRow[];
+		const kind = typeof data.kind === 'string' ? data.kind : 'post';
+		table.innerHTML = '';
+		const head = table.createTHead().insertRow();
+		const all = document.createElement( 'input' );
+		all.type = 'checkbox';
+		all.setAttribute( 'aria-label', 'Select all' );
+		all.addEventListener( 'change', () => {
+			for ( const box of table.querySelectorAll< HTMLInputElement >( 'tbody input[type=checkbox]' ) ) {
+				box.checked = all.checked;
+			}
+		} );
+		const th = ( content: string | Node ): void => {
+			const cell = document.createElement( 'th' );
+			cell.scope = 'col';
+			cell.append( content );
+			head.append( cell );
+		};
+		th( all );
+		th( kind === 'term' ? 'Term' : kind === 'user' ? 'User' : 'Post' );
+		th( 'Field' );
+		th( 'Key' );
+		th( 'Value' );
+		const body = table.createTBody();
+		for ( const entry of rows ) {
+			const row = body.insertRow();
+			row.dataset.objectId = String( entry.object_id );
+			row.dataset.key = entry.key;
+			const box = document.createElement( 'input' );
+			box.type = 'checkbox';
+			box.setAttribute( 'aria-label', `Select ${ entry.object } ${ entry.key }` );
+			row.insertCell().append( box );
+			row.insertCell().textContent = entry.object;
+			row.insertCell().textContent = entry.label;
+			const code = document.createElement( 'code' );
+			code.textContent = entry.key;
+			row.insertCell().append( code );
+			const cell = row.insertCell();
+			if ( entry.editable ) {
+				const input = document.createElement( 'input' );
+				input.type = 'text';
+				input.value = entry.value;
+				input.setAttribute( 'aria-label', `Value of ${ entry.key } for ${ entry.object }` );
+				input.addEventListener( 'input', () => {
+					box.checked = true;
+				} );
+				cell.append( input );
+			} else {
+				cell.textContent = entry.value;
+			}
+		}
+		status.textContent = rows.length === 0 ? 'No saved values.' : `${ rows.length } saved values.`;
+	};
+	const act = async ( action: 'update' | 'delete' ): Promise< void > => {
+		// Lists and objects are shown read-only; updating them here would overwrite them with text.
+		const rows = selected().filter( ( row ) => action === 'delete' || row.querySelector( 'input[type=text]' ) !== null );
+		if ( rows.length === 0 ) {
+			status.textContent = action === 'update' ? 'Select at least one editable row.' : 'Select at least one row.';
+			return;
+		}
+		if ( action === 'delete' && ! window.confirm( `Delete ${ rows.length } saved values? This cannot be undone.` ) ) {
+			return;
+		}
+		try {
+			await valuesCall( config, { action, group_id: group.id, items: rows.map( item ) } );
+			await load();
+			status.textContent = action === 'delete' ? `Deleted ${ rows.length } values.` : `Updated ${ rows.length } values.`;
+		} catch ( error ) {
+			status.textContent = error instanceof Error ? error.message : 'Request failed.';
+		}
+	};
+	update.addEventListener( 'click', () => void act( 'update' ) );
+	remove.addEventListener( 'click', () => void act( 'delete' ) );
+	try {
+		await load();
+	} catch ( error ) {
+		status.textContent = error instanceof Error ? error.message : 'Request failed.';
 	}
 }
 
@@ -742,7 +903,9 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 			const definition = definitions.find(
 				( item ) => item.id === target.dataset.wpessentialFieldsId
 			);
-			if ( definition ) {
+			if ( definition && bootstrap.editUrl ) {
+				window.location.href = `${ bootstrap.editUrl }&definition=${ encodeURIComponent( definition.id ) }`;
+			} else if ( definition ) {
 				edit( definition );
 			}
 			return;
@@ -816,11 +979,14 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 				}
 				const editing = current() !== undefined;
 				await post( bootstrap, bootstrap.routes.save, request() );
+				const message = editing ? 'Field Group updated.' : 'Field Group created.';
+				if ( bootstrap.view === 'edit' && bootstrap.listUrl ) {
+					window.location.href = `${ bootstrap.listUrl }&wpe_notice=${ encodeURIComponent( message ) }`;
+					return;
+				}
 				await refresh();
 				reset();
-				setNotice(
-					editing ? 'Field Group updated.' : 'Field Group created.'
-				);
+				setNotice( message );
 			} );
 		} );
 	}
@@ -830,7 +996,21 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 			await validate();
 		} );
 	} );
-	button( 'wpessential-fields-cancel' )?.addEventListener( 'click', reset );
+	button( 'wpessential-fields-cancel' )?.addEventListener( 'click', () => {
+		if ( bootstrap.view === 'edit' && bootstrap.listUrl ) {
+			window.location.href = bootstrap.listUrl;
+			return;
+		}
+		reset();
+	} );
+	root.addEventListener( 'click', ( event ) => {
+		const target = event.target instanceof HTMLElement ? event.target.closest< HTMLButtonElement >( '[data-wpessential-fields-values]' ) : null;
+		const id = target?.dataset.wpessentialFieldsValues;
+		const group = definitions.find( ( item ) => item.id === id );
+		if ( group && bootstrap.values ) {
+			void openValues( bootstrap.values, group );
+		}
+	} );
 	button( 'wpessential-fields-refresh' )?.addEventListener( 'click', () => {
 		void run( async () => {
 			await refresh();
@@ -838,8 +1018,15 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 		} );
 	} );
 
+	LIST_META = bootstrap.listMeta ?? {};
 	renderFields( fields, types );
 	renderDefinitions( definitions );
+	if ( bootstrap.view === 'edit' && bootstrap.editId ) {
+		const opened = definitions.find( ( item ) => item.id === bootstrap.editId );
+		if ( opened ) {
+			edit( opened );
+		}
+	}
 	root.dataset.wpessentialEnhanced = 'ready';
 	window.dispatchEvent(
 		new CustomEvent( 'wpessential:admin-ready', {

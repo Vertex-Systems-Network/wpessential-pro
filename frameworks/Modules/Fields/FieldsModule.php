@@ -265,6 +265,7 @@ final class FieldsModule implements ModuleInterface {
 			assets: $assets,
 			catalogProjector: new FieldAdminCatalogProjector(),
 			ajaxAction: $gateway->action(),
+			definitions: $services->has( 'platform.definitions' ) && $services->get( 'platform.definitions' ) instanceof DefinitionRepositoryInterface ? $services->get( 'platform.definitions' ) : null,
 		);
 		$services->set( 'module.custom-fields.admin', $admin );
 		$admin->register();
@@ -291,6 +292,26 @@ final class FieldsModule implements ModuleInterface {
 			);
 			if ( function_exists( 'add_action' ) && function_exists( 'add_filter' ) ) {
 				$screens->register();
+			}
+		}
+		global $wpdb;
+		if ( $definitions instanceof DefinitionRepositoryInterface && is_object( $wpdb ) && $abilities->descriptor( FieldValuesBrowser::ABILITY ) === null ) {
+			$browser = new FieldValuesBrowser( $definitions, $wpdb );
+			$abilities->register(
+				new AbilityDescriptor(
+					name: FieldValuesBrowser::ABILITY,
+					ownerSurfaceId: FieldGroupDefinitionNormalizer::OWNER_SURFACE_ID,
+					capability: self::CAPABILITY,
+					mutates: true,
+					channels: [ ExecutionChannel::Internal, ExecutionChannel::Ui ],
+					inputSchema: [ 'type' => 'object' ],
+					outputSchema: [ 'type' => 'object' ],
+				),
+				$browser,
+			);
+			$services->set( 'module.fields.values', $browser );
+			if ( function_exists( 'add_action' ) && $contexts instanceof WordPressExecutionContextFactory ) {
+				$browser->register( $abilities, $contexts );
 			}
 		}
 	}
