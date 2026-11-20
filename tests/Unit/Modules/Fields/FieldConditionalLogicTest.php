@@ -27,6 +27,24 @@ final class FieldConditionalLogicTest extends TestCase
         self::assertTrue(FieldConditionalLogic::visible(FieldConditionalLogic::normalize([[['field' => 'n', 'operator' => 'empty']]]), ['n' => 0]));
     }
 
+    public function testComparisonTextAndListOperators(): void
+    {
+        $rule = static fn (string $operator, string $value): array => FieldConditionalLogic::normalize([[['field' => 'x', 'operator' => $operator, 'value' => $value]]]);
+        $cases = [
+            ['>', '10', 11, true], ['>', '10', 10, false], ['>=', '10', 10, true], ['<', '10', 9.5, true], ['<=', '10', 11, false],
+            ['>', '10', '', false],
+            ['starts_with', 'VIP', 'VIP-gold', true], ['ends_with', 'gold', 'VIP-gold', true], ['ends_with', 'gold', 'silver', false],
+            ['not_contains', 'spam', 'hello', true], ['not_contains', 'spam', 'spammy', false],
+            ['in', 'red, blue', 'blue', true], ['in', 'red, blue', 'green', false], ['not_in', 'red, blue', 'green', true],
+            ['in', 'a,b', ['c', 'b'], true],
+        ];
+        foreach ($cases as [$operator, $value, $current, $expected]) {
+            self::assertSame($expected, FieldConditionalLogic::visible($rule($operator, $value), ['x' => $current]), "{$operator} {$value}");
+        }
+        $this->expectException(InvalidArgumentException::class);
+        $rule('>', 'ten');
+    }
+
     public function testRejectsBadShapes(): void
     {
         foreach ([[['field' => 'x']], [[['field' => 'x', 'operator' => 'regex']]], [[['field' => 'Bad Key', 'operator' => '==']]], [[]]] as $bad) {

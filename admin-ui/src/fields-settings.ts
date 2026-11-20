@@ -17,11 +17,96 @@ const SOURCES_BY_MODE: Record< string, string[] > = {
 	native_term_meta: [ 'taxonomy' ],
 	native_user_meta: [ 'user_role' ],
 };
-const PLACEHOLDER_BY_MODE: Record< string, string > = {
-	native_post_meta: 'book (comma-separated for "is one of")',
-	native_term_meta: 'category (comma-separated for "is one of")',
-	native_user_meta: 'author (comma-separated for "is one of")',
-};
+
+let CHOICES: Record< string, [ string, string ][] > = {};
+let SEARCH: { url: string; nonce: string } | null = null;
+
+/** Lists for the value pickers, from the builder bootstrap (post types, statuses, taxonomies, roles). */
+export function setLocationChoices( data: unknown ): void {
+	if ( ! isObject( data ) ) {
+		return;
+	}
+	const next: Record< string, [ string, string ][] > = {};
+	for ( const [ key, list ] of Object.entries( data ) ) {
+		if ( Array.isArray( list ) ) {
+			next[ key ] = list.filter(
+				( pair ): pair is [ string, string ] => Array.isArray( pair ) && typeof pair[ 0 ] === 'string' && typeof pair[ 1 ] === 'string'
+			);
+		}
+	}
+	CHOICES = next;
+	const search = data.search;
+	SEARCH = isObject( search ) && typeof search.url === 'string' && typeof search.nonce === 'string' ? { url: search.url, nonce: search.nonce } : null;
+}
+
+const MULTI_OPERATORS = [ 'in', 'not_in' ];
+
+/**
+ * Search box plus a select of the values that fit the rule's source; several values for "is one of".
+ * Posts (Specific post ID) are found through the WordPress REST search as you type.
+ */
+function valuePicker( source: string, operator: string, current: string[] ): HTMLSpanElement {
+	const box = el( 'span', 'wpessential-fields-value-picker' );
+	const search = el( 'input' );
+	search.type = 'search';
+	search.placeholder = source === 'entity_id' ? 'Type to search posts…' : 'Search…';
+	search.setAttribute( 'aria-label', 'Search rule values' );
+	const select = el( 'select' );
+	select.dataset.wpessentialFieldsRule = 'value';
+	select.setAttribute( 'aria-label', 'Rule value' );
+	select.multiple = MULTI_OPERATORS.includes( operator );
+	if ( select.multiple ) {
+		select.size = 5;
+	}
+	const add = ( value: string, label: string, chosen: boolean ): void => {
+		if ( select.querySelector( `option[value="${ CSS.escape( value ) }"]` ) ) {
+			return;
+		}
+		const option = el( 'option', undefined, label );
+		option.value = value;
+		option.selected = chosen;
+		select.append( option );
+	};
+	if ( ! select.multiple ) {
+		add( '', '— Select —', current.length === 0 );
+	}
+	for ( const value of current ) {
+		const known = ( CHOICES[ source ] ?? [] ).find( ( [ key ] ) => key === value );
+		add( value, known ? known[ 1 ] : source === 'entity_id' ? `#${ value }` : value, true );
+	}
+	for ( const [ value, label ] of CHOICES[ source ] ?? [] ) {
+		add( value, `${ label } (${ value })`, false );
+	}
+	let timer = 0;
+	search.addEventListener( 'input', () => {
+		const term = search.value.trim().toLowerCase();
+		for ( const option of select.options ) {
+			option.hidden = term !== '' && option.value !== '' && ! option.selected && ! option.text.toLowerCase().includes( term );
+		}
+		if ( source !== 'entity_id' || SEARCH === null || term.length < 2 ) {
+			return;
+		}
+		window.clearTimeout( timer );
+		const endpoint = SEARCH;
+		timer = window.setTimeout( async () => {
+			const url = `${ endpoint.url }${ endpoint.url.includes( '?' ) ? '&' : '?' }type=post&per_page=20&search=${ encodeURIComponent( term ) }`;
+			const response = await fetch( url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': endpoint.nonce } } );
+			const results: unknown = response.ok ? await response.json() : [];
+			for ( const item of Array.isArray( results ) ? results : [] ) {
+				if ( isObject( item ) && typeof item.id === 'number' ) {
+					add( String( item.id ), `${ typeof item.title === 'string' ? item.title : '' } (#${ item.id }, ${ typeof item.subtype === 'string' ? item.subtype : 'post' })`, false );
+				}
+			}
+		}, 300 );
+	} );
+	box.append( search, select );
+	return box;
+}
+
+function pickedValues( row: HTMLElement ): string[] {
+	const select = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="value"]' );
+	return select ? Array.from( select.selectedOptions, ( option ) => option.value ).filter( ( value ) => value !== '' ) : [];
+}
 
 function storageMode(): string {
 	const box = document.getElementById( 'wpessential-fields-storage-mode' );
@@ -40,7 +125,6 @@ function syncSources(): void {
 	const allowed = SOURCES_BY_MODE[ mode ] ?? SOURCES_BY_MODE.native_post_meta ?? [];
 	for ( const row of document.querySelectorAll< HTMLElement >( '.wpessential-fields-location-rule' ) ) {
 		const source = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="source"]' );
-		const input = row.querySelector< HTMLInputElement >( '[data-wpessential-fields-rule="value"]' );
 		if ( ! source ) {
 			continue;
 		}
@@ -52,9 +136,7 @@ function syncSources(): void {
 			source.append( option );
 		}
 		source.value = next;
-		if ( input ) {
-			input.placeholder = PLACEHOLDER_BY_MODE[ mode ] ?? PLACEHOLDER_BY_MODE.native_post_meta ?? '';
-		}
+		source.dispatchEvent( new Event( 'change' ) );
 	}
 }
 const LOCATION_OPERATORS: [ string, string ][] = [
@@ -166,13 +248,21 @@ function locationRow( rule: JsonObject ): HTMLDivElement {
 	const operator = selectBox( '', LOCATION_OPERATORS, text( rule, 'operator', 'equals' ) );
 	operator.dataset.wpessentialFieldsRule = 'operator';
 	operator.setAttribute( 'aria-label', 'Rule operator' );
-	const input = el( 'input' );
-	input.type = 'text';
-	input.dataset.wpessentialFieldsRule = 'value';
-	input.setAttribute( 'aria-label', 'Rule value' );
-	input.placeholder = PLACEHOLDER_BY_MODE[ mode ] ?? PLACEHOLDER_BY_MODE.native_post_meta ?? '';
 	const raw = rule.value;
-	input.value = Array.isArray( raw ) ? raw.join( ', ' ) : raw === undefined || raw === null ? '' : String( raw );
+	const current = ( Array.isArray( raw ) ? raw : raw === undefined || raw === null || raw === '' ? [] : [ raw ] ).map( String );
+	let picker = valuePicker( source.value, operator.value, current );
+	// Source or operator changes rebuild the picker and keep the values that still fit.
+	let shownSource = source.value;
+	const rebuild = (): void => {
+		// Values of another source (a post type is not a role) are dropped when the source changes.
+		const keep = source.value === shownSource ? pickedValues( row ) : [];
+		shownSource = source.value;
+		const next = valuePicker( source.value, operator.value, keep );
+		picker.replaceWith( next );
+		picker = next;
+	};
+	source.addEventListener( 'change', rebuild );
+	operator.addEventListener( 'change', rebuild );
 	const negate = el( 'input' );
 	negate.type = 'checkbox';
 	negate.dataset.wpessentialFieldsRule = 'negate';
@@ -185,7 +275,7 @@ function locationRow( rule: JsonObject ): HTMLDivElement {
 	const remove = el( 'button', 'button-link', 'Remove' );
 	remove.type = 'button';
 	remove.dataset.wpessentialFieldsRuleAction = 'remove';
-	row.append( source, operator, input, negateLabel, and, remove );
+	row.append( source, operator, picker, negateLabel, and, remove );
 	return row;
 }
 
@@ -204,17 +294,6 @@ function renderLocations( host: HTMLElement, locations: unknown ): void {
 		const rules = Array.isArray( group ) ? group.filter( isObject ) : [];
 		host.append( locationGroup( rules ) );
 	}
-}
-
-function ruleValue( operator: string, raw: string ): unknown {
-	const parts = raw
-		.split( ',' )
-		.map( ( part ) => part.trim() )
-		.filter( ( part ) => part !== '' );
-	if ( operator === 'in' || operator === 'not_in' ) {
-		return parts;
-	}
-	return parts[ 0 ] ?? '';
 }
 
 /** True when the rule selects post types (is / is one of, or a negated is not / is none of). */
@@ -241,7 +320,7 @@ function collectLocations( host: HTMLElement ): JsonObject[][] {
 			rules.push( {
 				source: part( 'source' )?.value ?? 'post_type',
 				operator,
-				value: ruleValue( operator, part( 'value' )?.value ?? '' ),
+				value: MULTI_OPERATORS.includes( operator ) ? pickedValues( row ) : ( pickedValues( row )[ 0 ] ?? '' ),
 				negate: ( part( 'negate' ) as HTMLInputElement | null )?.checked ?? false,
 			} );
 		}
@@ -445,6 +524,15 @@ const OPERATORS: Array< [ string, string ] > = [
 	[ 'empty', 'is empty' ],
 	[ 'not_empty', 'is not empty' ],
 	[ 'contains', 'contains' ],
+	[ 'not_contains', 'does not contain' ],
+	[ 'starts_with', 'starts with' ],
+	[ 'ends_with', 'ends with' ],
+	[ '>', 'is greater than' ],
+	[ '>=', 'is at least' ],
+	[ '<', 'is less than' ],
+	[ '<=', 'is at most' ],
+	[ 'in', 'is one of (comma-separated)' ],
+	[ 'not_in', 'is none of (comma-separated)' ],
 ];
 
 /**
