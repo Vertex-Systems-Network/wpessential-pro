@@ -73,6 +73,26 @@ final class StatusModule implements ModuleInterface {
 		$this->assertOutputAvailable( $services );
 		[$definitions, $abilities] = $this->requireSharedServices( $services );
 		$this->registerAdminAbilities( $services, $definitions, $abilities );
+
+		$existing = new ExistingStatusOverrides( $definitions );
+		$abilities->register(
+			new AbilityDescriptor(
+				name: ExistingStatusOverrides::ABILITY,
+				ownerSurfaceId: 5,
+				capability: self::ADMIN_CAPABILITY,
+				mutates: true,
+				channels: [ ExecutionChannel::Internal, ExecutionChannel::Ui, ExecutionChannel::Rest ],
+				inputSchema: [ 'type' => 'object' ],
+				outputSchema: [ 'type' => 'object' ],
+			),
+			$existing,
+		);
+		$services->set( 'module.status.existing', $existing );
+		$contexts = $services->get( 'platform.abilities.contexts' );
+		if ( function_exists( 'add_filter' ) && function_exists( 'add_action' ) && $contexts instanceof WordPressExecutionContextFactory ) {
+			$existing->register();
+			$existing->registerAdmin( $abilities, $contexts, \WPEssential\Platform\Admin\PlatformAdminController::PAGE_SLUG );
+		}
 	}
 
 	public function boot( ServiceRegistryInterface $services ): void {
