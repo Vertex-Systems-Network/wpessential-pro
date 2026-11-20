@@ -284,6 +284,18 @@ function makeActionButton(
 	return element;
 }
 
+/** Label to a storage key: lowercase letters, numbers and underscores, starting with a letter. */
+export function fieldKey( label: string ): string {
+	const key = label
+		.normalize( 'NFKD' )
+		.replace( /[\u0300-\u036f]/g, '' )
+		.toLowerCase()
+		.replace( /[^a-z0-9]+/g, '_' )
+		.replace( /^_+|_+$/g, '' )
+		.slice( 0, 64 );
+	return /^[a-z]/.test( key ) ? key : key === '' ? '' : `field_${ key }`.slice( 0, 64 );
+}
+
 function typeMap( bootstrap: Bootstrap ): Map< string, CatalogType > {
 	return new Map(
 		bootstrap.catalog.types.map( ( type ) => [ type.key, type ] )
@@ -369,7 +381,16 @@ function renderFields(
 		keyInput.dataset.wpessentialFieldsField = 'key';
 		keyInput.dataset.wpessentialFieldsIndex = String( index );
 		key.append( keyInput );
-		grid.append( label, key );
+		const help = document.createElement( 'label' );
+		help.textContent = 'Description';
+		const helpInput = document.createElement( 'textarea' );
+		helpInput.rows = 2;
+		helpInput.value = stringValue( field, 'instructions' );
+		helpInput.placeholder = 'Shown under the field for editors';
+		helpInput.dataset.wpessentialFieldsField = 'instructions';
+		helpInput.dataset.wpessentialFieldsIndex = String( index );
+		help.append( helpInput );
+		grid.append( label, key, help );
 		row.append( grid );
 
 		if ( persistedUuid ) {
@@ -457,6 +478,19 @@ function renderDefinitions( definitions: GroupDefinition[] ): void {
 function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 	let definitions = [ ...bootstrap.definitions ];
 	let fields: JsonObject[] = [];
+	// Fields whose key still follows the label; editing the key by hand removes them.
+	const autoKeys = new WeakSet< JsonObject >();
+	const uniqueKey = ( base: string, self: JsonObject ): string => {
+		const taken = new Set( fields.filter( ( other ) => other !== self ).map( ( other ) => stringValue( other, 'key' ) ) );
+		if ( base === '' || ! taken.has( base ) ) {
+			return base;
+		}
+		let n = 2;
+		while ( taken.has( `${ base }_${ n }` ) ) {
+			n++;
+		}
+		return `${ base }_${ n }`;
+	};
 	let busy = false;
 	const types = typeMap( bootstrap );
 	const builderForm = document.getElementById( 'wpessential-fields-form' );
@@ -643,7 +677,7 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 			setNotice( 'Select an available V1 field type.', true );
 			return;
 		}
-		fields.push( {
+		const added: JsonObject = {
 			uuid: null,
 			key: '',
 			label: descriptor.label,
@@ -651,7 +685,10 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 			settings: {},
 			show_in_rest: false,
 			rest_schema: 'auto',
-		} );
+		};
+		added.key = uniqueKey( fieldKey( descriptor.label ), added );
+		autoKeys.add( added );
+		fields.push( added );
 		if ( chooser ) {
 			chooser.value = '';
 		}
@@ -661,7 +698,7 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 
 	root.addEventListener( 'input', ( event ) => {
 		const target = event.target;
-		if ( ! ( target instanceof HTMLInputElement ) ) {
+		if ( ! ( target instanceof HTMLInputElement ) && ! ( target instanceof HTMLTextAreaElement ) ) {
 			return;
 		}
 		const key = target.dataset.wpessentialFieldsField;
@@ -669,10 +706,25 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 		if ( ! key || ! Number.isInteger( index ) || ! fields[ index ] ) {
 			return;
 		}
-		if ( key === 'key' && uuid( fields[ index ] ) !== null ) {
+		const field = fields[ index ];
+		if ( key === 'key' && uuid( field ) !== null ) {
 			return;
 		}
-		fields[ index ][ key ] = target.value;
+		// A new field's key follows its label until the user edits the key by hand.
+		if ( key === 'key' ) {
+			autoKeys.delete( field );
+		}
+		if ( key === 'label' && autoKeys.has( field ) ) {
+			const nextKey = uniqueKey( fieldKey( target.value ), field );
+			field.key = nextKey;
+			const keyInput = root.querySelector< HTMLInputElement >(
+				`input[data-wpessential-fields-field="key"][data-wpessential-fields-index="${ index }"]`
+			);
+			if ( keyInput ) {
+				keyInput.value = nextKey;
+			}
+		}
+		field[ key ] = target.value;
 		clearValidation();
 	} );
 

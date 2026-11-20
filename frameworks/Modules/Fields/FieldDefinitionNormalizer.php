@@ -80,6 +80,7 @@ final class FieldDefinitionNormalizer {
 			'uuid'                  => $uuid,
 			'key'                   => $key,
 			'label'                 => trim( $label ),
+			'instructions'          => self::instructions( $field['instructions'] ?? '' ),
 			'type'                  => $descriptor->key,
 			'preset'                => $preset?->key,
 			'logical_type'          => $descriptor->logicalType,
@@ -93,6 +94,19 @@ final class FieldDefinitionNormalizer {
 			'repeatability'         => $repeat,
 			'subfields'             => $subfields,
 		];
+	}
+
+	/** Help text shown under the field; plain text only. */
+	private static function instructions( mixed $value ): string {
+		if ( ! is_string( $value ) ) {
+			throw new InvalidArgumentException( 'Field instructions must be text.' );
+		}
+		$value = trim( $value );
+		if ( mb_strlen( $value ) > 1000 || str_contains( $value, '<' ) ) {
+			throw new InvalidArgumentException( 'Field instructions must be plain text up to 1000 characters.' );
+		}
+
+		return $value;
 	}
 
 	private function requestedType( string $submittedType, mixed $submittedPreset ): string {
