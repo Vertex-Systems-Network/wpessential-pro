@@ -1,0 +1,40 @@
+{
+	"name": "woo-product-excerpt",
+	"title": "Product Short Description (WPEssential)",
+	"category": "woocommerce",
+	"description": "The short description of the current product.",
+	"icon": "text",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"textTypography": {
+			"type": "typography",
+			"label": "Text",
+			"selector": ".wpe-woo-excerpt",
+			"panel": "style"
+		},
+		"textColor": {
+			"type": "colors",
+			"label": "Text",
+			"prop": "color",
+			"selector": ".wpe-woo-excerpt",
+			"panel": "style"
+		}
+	}
+}

@@ -1,0 +1,26 @@
+{
+	"name": "woo-notices",
+	"title": "Store Notices (WPEssential)",
+	"category": "woocommerce",
+	"description": "WooCommerce messages (added to cart, errors, info) where you place it.",
+	"icon": "warning",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {},
+	"groups": {
+		"noticeTypography": {
+			"type": "typography",
+			"label": "Text",
+			"selector": ".wpe-woo-notices",
+			"panel": "style"
+		}
+	}
+}

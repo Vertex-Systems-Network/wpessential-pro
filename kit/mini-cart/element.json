@@ -1,0 +1,39 @@
+{
+	"name": "mini-cart",
+	"title": "Mini Cart (WPEssential)",
+	"category": "woocommerce",
+	"description": "Cart icon with item count and total; opens a panel with the cart, updates live when products are added.",
+	"icon": "cart",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"showTotal": {
+			"type": "toggle",
+			"label": "Show total",
+			"default": false,
+			"panel": "content"
+		},
+		"label": {
+			"type": "text",
+			"label": "Accessible label",
+			"default": "Cart",
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"countBackground": {
+			"type": "background",
+			"label": "Count badge",
+			"selector": ".wpe-mini-cart__count",
+			"panel": "style"
+		}
+	}
+}

@@ -1,0 +1,67 @@
+{
+	"name": "woo-product-meta",
+	"title": "Product Meta (WPEssential)",
+	"category": "woocommerce",
+	"description": "SKU, categories and tags of the current product.",
+	"icon": "tag",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"showSku": {
+			"type": "toggle",
+			"label": "SKU",
+			"default": true,
+			"panel": "content"
+		},
+		"showCategories": {
+			"type": "toggle",
+			"label": "Categories",
+			"default": true,
+			"panel": "content"
+		},
+		"showTags": {
+			"type": "toggle",
+			"label": "Tags",
+			"default": true,
+			"panel": "content"
+		},
+		"layout": {
+			"type": "select",
+			"label": "Layout",
+			"default": "stack",
+			"options": {
+				"stack": "Stacked",
+				"inline": "Inline"
+			},
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"labelTypography": {
+			"type": "typography",
+			"label": "Labels",
+			"selector": ".wpe-woo-meta__label",
+			"panel": "style"
+		},
+		"valueTypography": {
+			"type": "typography",
+			"label": "Values",
+			"selector": ".wpe-woo-meta__value",
+			"panel": "style"
+		}
+	}
+}
