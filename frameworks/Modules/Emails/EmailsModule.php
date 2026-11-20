@@ -56,7 +56,7 @@ final class EmailsModule implements ModuleInterface {
 		$contexts = $services->has( 'platform.abilities.contexts' ) ? $services->get( 'platform.abilities.contexts' ) : null;
 		if ( function_exists( 'add_filter' ) && function_exists( 'add_action' ) && $contexts instanceof \WPEssential\Platform\WordPress\Abilities\WordPressExecutionContextFactory ) {
 			$core->register();
-			$core->registerAdmin( $abilities, $contexts, \WPEssential\Platform\Admin\PlatformAdminController::PAGE_SLUG );
+			$core->registerAdmin( $abilities, $contexts );
 		}
 		$channels = [ ExecutionChannel::Internal, ExecutionChannel::Ui, ExecutionChannel::Rest ];
 		$this->registerAbility(
