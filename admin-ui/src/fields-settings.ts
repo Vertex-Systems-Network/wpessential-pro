@@ -379,6 +379,102 @@ function optionalNumber( raw: string, integer: boolean ): number | undefined | n
 	return integer ? Number.parseInt( trimmed, 10 ) : Number( trimmed );
 }
 
+const OPERATORS: Array< [ string, string ] > = [
+	[ '==', 'is equal to' ],
+	[ '!=', 'is not equal to' ],
+	[ 'empty', 'is empty' ],
+	[ 'not_empty', 'is not empty' ],
+	[ 'contains', 'contains' ],
+];
+
+/**
+ * "Show this field only if": OR groups of AND rules, written into settings.conditional_logic.
+ * Rules name another field by its storage key.
+ */
+function conditionsEditor( settings: JsonObject, baseId: string ): HTMLFieldSetElement {
+	const box = el( 'fieldset', 'wpessential-fields-conditions' );
+	box.append( el( 'legend', undefined, 'Show this field only if' ) );
+	const list = el( 'div' );
+	box.append( list );
+	const groups: JsonObject[][] = Array.isArray( settings.conditional_logic )
+		? ( settings.conditional_logic as JsonObject[][] )
+		: [];
+	const save = (): void => {
+		// Rules still missing a field key are kept on screen but not saved.
+		const kept = groups
+			.map( ( group ) => group.filter( ( rule ) => typeof rule.field === 'string' && rule.field !== '' ) )
+			.filter( ( group ) => group.length > 0 );
+		if ( kept.length === 0 ) {
+			delete settings.conditional_logic;
+		} else {
+			settings.conditional_logic = kept;
+		}
+	};
+	const draw = (): void => {
+		list.replaceChildren();
+		groups.forEach( ( group, g ) => {
+			const groupBox = el( 'div', 'wpessential-fields-condition-group' );
+			if ( g > 0 ) {
+				groupBox.append( el( 'p', undefined, 'or' ) );
+			}
+			group.forEach( ( rule, r ) => {
+				const row = el( 'div', 'wpessential-fields-condition' );
+				const key = el( 'input' );
+				key.type = 'text';
+				key.id = `${ baseId }-${ g }-${ r }-field`;
+				key.placeholder = 'other_field_key';
+				key.value = typeof rule.field === 'string' ? rule.field : '';
+				key.addEventListener( 'input', () => {
+					rule.field = key.value.trim();
+					save();
+				} );
+				const operator = selectBox( `${ baseId }-${ g }-${ r }-operator`, OPERATORS, typeof rule.operator === 'string' ? rule.operator : '==' );
+				const value = el( 'input' );
+				value.type = 'text';
+				value.id = `${ baseId }-${ g }-${ r }-value`;
+				value.value = typeof rule.value === 'string' ? rule.value : '';
+				value.hidden = operator.value === 'empty' || operator.value === 'not_empty';
+				operator.addEventListener( 'change', () => {
+					rule.operator = operator.value;
+					value.hidden = operator.value === 'empty' || operator.value === 'not_empty';
+					save();
+				} );
+				value.addEventListener( 'input', () => {
+					rule.value = value.value;
+					save();
+				} );
+				const remove = el( 'button', 'button-link-delete', 'Remove rule' );
+				remove.type = 'button';
+				remove.addEventListener( 'click', () => {
+					group.splice( r, 1 );
+					save();
+					draw();
+				} );
+				row.append( labelled( 'Field key', key ), labelled( 'Condition', operator ), labelled( 'Value', value ), remove );
+				groupBox.append( row );
+			} );
+			const and = el( 'button', 'button', 'And' );
+			and.type = 'button';
+			and.addEventListener( 'click', () => {
+				group.push( { field: '', operator: '==', value: '' } );
+				draw();
+			} );
+			groupBox.append( and );
+			list.append( groupBox );
+		} );
+	};
+	const or = el( 'button', 'button', groups.length === 0 ? 'Add condition' : 'Or' );
+	or.type = 'button';
+	or.addEventListener( 'click', () => {
+		groups.push( [ { field: '', operator: '==', value: '' } ] );
+		or.textContent = 'Or';
+		draw();
+	} );
+	box.append( or );
+	draw();
+	return box;
+}
+
 /** Subfield types the edit-screen box renders inside a group or repeater row. */
 export const SUBFIELD_TYPES: Array< [ string, string ] > = [
 	[ 'text', 'Text' ],
@@ -544,6 +640,7 @@ export function fieldSettingsPanel( field: JsonObject, index: number ): HTMLDeta
 			setting( 'max_length' )( next );
 		} );
 	}
+	grid.append( conditionsEditor( settings, id( 'conditions' ) ) );
 	if ( type === 'group' || type === 'repeater' ) {
 		grid.append( subfieldsEditor( field, id( 'subfields' ) ) );
 		if ( type === 'repeater' ) {

@@ -92,7 +92,8 @@ final class FieldPostMetaBox {
 			$id    = 'wpe-field-' . $uuid;
 			$name  = sprintf( 'wpe_fields[%s][%s]', $group->id, $uuid );
 			$value = $this->read( $group->id, $uuid, $post->ID );
-			echo '<tr><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( (string) ( $field['label'] ?? $field['key'] ?? '' ) ) . '</label></th><td>';
+			$conditions = (array) ( $field['settings']['conditional_logic'] ?? [] );
+			echo '<tr data-wpe-key="' . esc_attr( (string) ( $field['key'] ?? '' ) ) . '"' . ( $conditions !== [] ? ' data-wpe-conditions="' . esc_attr( (string) wp_json_encode( $conditions ) ) . '"' : '' ) . '><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( (string) ( $field['label'] ?? $field['key'] ?? '' ) ) . '</label></th><td>';
 			if ( $type === 'textarea' ) {
 				echo '<textarea class="large-text" rows="4" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( is_scalar( $value ) ? (string) $value : '' ) . '</textarea>';
 			} elseif ( self::INPUTS[ $type ] === 'checkbox' ) {
@@ -107,6 +108,19 @@ final class FieldPostMetaBox {
 			echo '</td></tr>';
 		}
 		echo '</tbody></table>';
+		$this->printConditionsScript();
+	}
+
+	private bool $scriptPrinted = false;
+
+	/** Shows or hides rows as values change; hidden rows are disabled so they are not submitted. */
+	private function printConditionsScript(): void {
+		if ( $this->scriptPrinted ) {
+			return;
+		}
+		$this->scriptPrinted = true;
+		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- tiny inline behavior for this box only.
+		echo "<script>(function(){function val(row){var out=[];row.querySelectorAll('input,select,textarea').forEach(function(el){if(el.type==='hidden'&&row.querySelector('input[type=checkbox][name=\"'+el.name+'\"]'))return;if((el.type==='checkbox'||el.type==='radio')&&!el.checked)return;if(el.multiple){Array.from(el.selectedOptions).forEach(function(o){out.push(o.value)});return}out.push(el.value)});return out}function ok(rule,list){var empty=list.filter(function(v){return v!==''&&v!=='0'}).length===0;switch(rule.operator){case '==':return list.indexOf(rule.value)>-1;case '!=':return list.indexOf(rule.value)===-1;case 'empty':return empty;case 'not_empty':return !empty;case 'contains':return rule.value!==''&&list.some(function(v){return v.indexOf(rule.value)>-1});}return false}function run(box){var rows={};box.querySelectorAll('tr[data-wpe-key]').forEach(function(r){rows[r.dataset.wpeKey]=r});box.querySelectorAll('tr[data-wpe-conditions]').forEach(function(r){var groups=JSON.parse(r.dataset.wpeConditions);var show=groups.some(function(g){return g.every(function(rule){var src=rows[rule.field];return ok(rule,src&&src.style.display!=='none'?val(src):[])})});r.style.display=show?'':'none';r.querySelectorAll('input,select,textarea').forEach(function(el){el.disabled=!show})})}document.querySelectorAll('.form-table').forEach(function(box){if(!box.querySelector('tr[data-wpe-conditions]'))return;run(box);box.addEventListener('change',function(){run(box)});box.addEventListener('input',function(){run(box)})})})();</script>";
 	}
 
 	/**
@@ -221,9 +235,20 @@ final class FieldPostMetaBox {
 				continue;
 			}
 			$byUuid = array_column( (array) ( $group->payload['fields'] ?? [] ), null, 'uuid' );
+			$values = [];
+			foreach ( $fields as $uuid => $raw ) {
+				$type = (string) ( $byUuid[ $uuid ]['type'] ?? '' );
+				if ( is_string( $uuid ) && isset( self::INPUTS[ $type ] ) ) {
+					$values[ (string) ( $byUuid[ $uuid ]['key'] ?? '' ) ] = self::value( $type, $raw, $byUuid[ $uuid ] );
+				}
+			}
 			foreach ( $fields as $uuid => $raw ) {
 				$type = (string) ( $byUuid[ $uuid ]['type'] ?? '' );
 				if ( ! is_string( $uuid ) || ! isset( self::INPUTS[ $type ] ) ) {
+					continue;
+				}
+				// A field hidden by its conditions keeps its stored value, as in ACF.
+				if ( ! FieldConditionalLogic::visible( (array) ( $byUuid[ $uuid ]['settings']['conditional_logic'] ?? [] ), $values ) ) {
 					continue;
 				}
 				try {
