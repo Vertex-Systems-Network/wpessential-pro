@@ -257,6 +257,14 @@ export function visibilityEditor(): VisibilityEditor {
 	let mode = 'native_post_meta';
 	let anchor = searchSelect( { label: 'Enable for', multiple: true, choices: [], selected: [] } );
 	add.addEventListener( 'click', () => list.append( conditionRow( mode, {} ) ) );
+	// AND / OR only means something with two or more conditions, and is only saved then.
+	const syncRelation = (): void => {
+		relationLabel.hidden = list.children.length < 2;
+		if ( relationLabel.hidden ) {
+			relation.value = 'all';
+		}
+	};
+	new MutationObserver( syncRelation ).observe( list, { childList: true } );
 	const screen = el( 'select' );
 	screen.id = 'wpessential-fields-visible-at';
 	for ( const [ value, label ] of [
@@ -321,6 +329,7 @@ export function visibilityEditor(): VisibilityEditor {
 		screen.value = screenValue === 'edit' ? 'edit' : '';
 		screenHost.hidden = mode !== 'native_user_meta';
 		list.replaceChildren( ...conditions.map( ( rule ) => conditionRow( mode, rule ) ) );
+		syncRelation();
 	};
 
 	const collect = ( current: string ): JsonObject[][] => {
