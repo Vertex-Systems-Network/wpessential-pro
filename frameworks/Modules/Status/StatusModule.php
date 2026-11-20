@@ -89,7 +89,7 @@ final class StatusModule implements ModuleInterface {
 		);
 		$services->set( 'module.status.existing', $existing );
 		$contexts = $services->get( 'platform.abilities.contexts' );
-		if ( function_exists( 'add_action' ) && $contexts instanceof WordPressExecutionContextFactory ) {
+		if ( function_exists( 'add_filter' ) && function_exists( 'add_action' ) && $contexts instanceof WordPressExecutionContextFactory ) {
 			$existing->register();
 			$existing->registerAdmin( $abilities, $contexts, \WPEssential\Platform\Admin\PlatformAdminController::PAGE_SLUG );
 		}

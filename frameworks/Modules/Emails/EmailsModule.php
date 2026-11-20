@@ -54,7 +54,7 @@ final class EmailsModule implements ModuleInterface {
 		);
 		$services->set( 'module.emails.core-overrides', $core );
 		$contexts = $services->has( 'platform.abilities.contexts' ) ? $services->get( 'platform.abilities.contexts' ) : null;
-		if ( function_exists( 'add_filter' ) && $contexts instanceof \WPEssential\Platform\WordPress\Abilities\WordPressExecutionContextFactory ) {
+		if ( function_exists( 'add_filter' ) && function_exists( 'add_action' ) && $contexts instanceof \WPEssential\Platform\WordPress\Abilities\WordPressExecutionContextFactory ) {
 			$core->register();
 			$core->registerAdmin( $abilities, $contexts, \WPEssential\Platform\Admin\PlatformAdminController::PAGE_SLUG );
 		}
