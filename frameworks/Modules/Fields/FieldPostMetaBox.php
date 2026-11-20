@@ -83,19 +83,39 @@ final class FieldPostMetaBox {
 		wp_nonce_field( self::NONCE, self::NONCE );
 		printf( '<input type="hidden" name="wpe_fields_revision[%s]" value="%d">', esc_attr( $group->id ), (int) $group->revision );
 		echo '<table class="form-table" role="presentation"><tbody>';
-		foreach ( (array) ( $group->payload['fields'] ?? [] ) as $field ) {
+		self::renderRows(
+			(array) ( $group->payload['fields'] ?? [] ),
+			'wpe_fields[' . $group->id . ']',
+			fn ( string $uuid ): mixed => $this->read( $group->id, $uuid, $post->ID ),
+		);
+		echo '</tbody></table>';
+		self::printConditionsScript();
+	}
+
+	/**
+	 * Table rows for every field the edit screens can show; shared by posts, terms and users.
+	 *
+	 * @param list<array<string,mixed>> $fields
+	 * @param callable(string):mixed $valueOf Stored value by field UUID.
+	 */
+	public static function renderRows( array $fields, string $namePrefix, callable $valueOf ): void {
+		foreach ( $fields as $field ) {
 			$type = (string) ( $field['type'] ?? '' );
 			$uuid = (string) ( $field['uuid'] ?? '' );
 			if ( ! isset( self::INPUTS[ $type ] ) || $uuid === '' ) {
 				continue;
 			}
 			$id    = 'wpe-field-' . $uuid;
-			$name  = sprintf( 'wpe_fields[%s][%s]', $group->id, $uuid );
-			$value = $this->read( $group->id, $uuid, $post->ID );
+			$name  = $namePrefix . '[' . $uuid . ']';
+			$value = $valueOf( $uuid );
 			$conditions = (array) ( $field['settings']['conditional_logic'] ?? [] );
 			echo '<tr data-wpe-key="' . esc_attr( (string) ( $field['key'] ?? '' ) ) . '"' . ( $conditions !== [] ? ' data-wpe-conditions="' . esc_attr( (string) wp_json_encode( $conditions ) ) . '"' : '' ) . '><th scope="row"><label for="' . esc_attr( $id ) . '">' . esc_html( (string) ( $field['label'] ?? $field['key'] ?? '' ) ) . '</label></th><td>';
 			if ( $type === 'textarea' ) {
 				echo '<textarea class="large-text" rows="4" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '">' . esc_textarea( is_scalar( $value ) ? (string) $value : '' ) . '</textarea>';
+			} elseif ( $type === 'group' || $type === 'repeater' ) {
+				self::renderContainer( $type, $field, $id, $name, $value );
+			} elseif ( $type === 'select' || $type === 'radio' ) {
+				self::renderChoices( $type, $field, $id, $name, $value );
 			} elseif ( self::INPUTS[ $type ] === 'checkbox' ) {
 				echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="0"><input type="checkbox" id="' . esc_attr( $id ) . '" name="' . esc_attr( $name ) . '" value="1"' . checked( (bool) $value, true, false ) . '>';
 			} else {
@@ -107,18 +127,16 @@ final class FieldPostMetaBox {
 			}
 			echo '</td></tr>';
 		}
-		echo '</tbody></table>';
-		$this->printConditionsScript();
 	}
 
-	private bool $scriptPrinted = false;
+	private static bool $scriptPrinted = false;
 
 	/** Shows or hides rows as values change; hidden rows are disabled so they are not submitted. */
-	private function printConditionsScript(): void {
-		if ( $this->scriptPrinted ) {
+	public static function printConditionsScript(): void {
+		if ( self::$scriptPrinted ) {
 			return;
 		}
-		$this->scriptPrinted = true;
+		self::$scriptPrinted = true;
 		// phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- tiny inline behavior for this box only.
 		echo "<script>(function(){function val(row){var out=[];row.querySelectorAll('input,select,textarea').forEach(function(el){if(el.type==='hidden'&&row.querySelector('input[type=checkbox][name=\"'+el.name+'\"]'))return;if((el.type==='checkbox'||el.type==='radio')&&!el.checked)return;if(el.multiple){Array.from(el.selectedOptions).forEach(function(o){out.push(o.value)});return}out.push(el.value)});return out}function ok(rule,list){var empty=list.filter(function(v){return v!==''&&v!=='0'}).length===0;switch(rule.operator){case '==':return list.indexOf(rule.value)>-1;case '!=':return list.indexOf(rule.value)===-1;case 'empty':return empty;case 'not_empty':return !empty;case 'contains':return rule.value!==''&&list.some(function(v){return v.indexOf(rule.value)>-1});}return false}function run(box){var rows={};box.querySelectorAll('tr[data-wpe-key]').forEach(function(r){rows[r.dataset.wpeKey]=r});box.querySelectorAll('tr[data-wpe-conditions]').forEach(function(r){var groups=JSON.parse(r.dataset.wpeConditions);var show=groups.some(function(g){return g.every(function(rule){var src=rows[rule.field];return ok(rule,src&&src.style.display!=='none'?val(src):[])})});r.style.display=show?'':'none';r.querySelectorAll('input,select,textarea').forEach(function(el){el.disabled=!show})})}document.querySelectorAll('.form-table').forEach(function(box){if(!box.querySelector('tr[data-wpe-conditions]'))return;run(box);box.addEventListener('change',function(){run(box)});box.addEventListener('input',function(){run(box)})})})();</script>";
 	}
@@ -130,7 +148,7 @@ final class FieldPostMetaBox {
 	 *
 	 * @param array<string,mixed> $field
 	 */
-	private function renderContainer( string $type, array $field, string $id, string $name, mixed $value ): void {
+	private static function renderContainer( string $type, array $field, string $id, string $name, mixed $value ): void {
 		$subfields = array_values( array_filter( (array) ( $field['subfields'] ?? [] ), static fn ( mixed $sub ): bool => is_array( $sub ) && isset( self::INPUTS[ (string) ( $sub['type'] ?? '' ) ] ) && ! in_array( $sub['type'], [ 'group', 'repeater' ], true ) ) );
 		$rows      = $type === 'group' ? [ is_array( $value ) ? $value : [] ] : array_values( array_filter( is_array( $value ) ? $value : [], 'is_array' ) );
 		if ( $type === 'repeater' ) {
@@ -156,7 +174,7 @@ final class FieldPostMetaBox {
 				} elseif ( self::INPUTS[ $subType ] === 'checkbox' ) {
 					echo '<input type="hidden" name="' . esc_attr( $subName ) . '" value="0"><input type="checkbox" id="' . esc_attr( $subId ) . '" name="' . esc_attr( $subName ) . '" value="1"' . checked( (bool) $current, true, false ) . '>';
 				} elseif ( $subType === 'select' || $subType === 'radio' ) {
-					$this->renderChoices( 'select', $sub, $subId, $subName, $current );
+					self::renderChoices( 'select', $sub, $subId, $subName, $current );
 				} else {
 					$shown = $subType === 'datetime' ? self::localDateTime( $current ) : ( is_scalar( $current ) ? (string) $current : '' );
 					echo '<input class="regular-text" type="' . esc_attr( self::INPUTS[ $subType ] ) . '" id="' . esc_attr( $subId ) . '" name="' . esc_attr( $subName ) . '" value="' . esc_attr( $shown ) . '">';
@@ -169,7 +187,7 @@ final class FieldPostMetaBox {
 	}
 
 	/** @param array<string,mixed> $field */
-	private function renderChoices( string $type, array $field, string $id, string $name, mixed $value ): void {
+	private static function renderChoices( string $type, array $field, string $id, string $name, mixed $value ): void {
 		$choices  = self::choices( $field );
 		$multiple = $type === 'select' && ( $field['settings']['multiple'] ?? false ) === true;
 		$selected = array_map( 'strval', is_array( $value ) ? $value : ( $value === null ? [] : [ $value ] ) );
