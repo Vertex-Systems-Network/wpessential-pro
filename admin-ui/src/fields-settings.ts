@@ -524,6 +524,15 @@ const OPERATORS: Array< [ string, string ] > = [
 	[ 'empty', 'is empty' ],
 	[ 'not_empty', 'is not empty' ],
 	[ 'contains', 'contains' ],
+	[ 'not_contains', 'does not contain' ],
+	[ 'starts_with', 'starts with' ],
+	[ 'ends_with', 'ends with' ],
+	[ '>', 'is greater than' ],
+	[ '>=', 'is at least' ],
+	[ '<', 'is less than' ],
+	[ '<=', 'is at most' ],
+	[ 'in', 'is one of (comma-separated)' ],
+	[ 'not_in', 'is none of (comma-separated)' ],
 ];
 
 /**

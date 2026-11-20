@@ -14,11 +14,12 @@ use InvalidArgumentException;
  * Show a field only when other fields in the same group match.
  *
  * Shape (ACF style): a list of OR groups, each a list of AND rules
- * {field: <field key>, operator: ==|!=|empty|not_empty|contains, value?: string}.
+ * {field: <field key>, operator: one of OPERATORS, value?: string}. "in" / "not_in" take a comma-separated list;
+ * the number comparisons need a numeric value.
  */
 final class FieldConditionalLogic {
 
-	public const OPERATORS = [ '==', '!=', 'empty', 'not_empty', 'contains' ];
+	public const OPERATORS = [ '==', '!=', 'empty', 'not_empty', 'contains', 'not_contains', 'starts_with', 'ends_with', '>', '>=', '<', '<=', 'in', 'not_in' ];
 
 	/**
 	 * @return list<list<array{field:string,operator:string,value:string}>>
@@ -48,6 +49,9 @@ final class FieldConditionalLogic {
 				}
 				if ( ! is_scalar( $value ) ) {
 					throw new InvalidArgumentException( 'A conditional logic value must be text.' );
+				}
+				if ( in_array( $operator, [ '>', '>=', '<', '<=' ], true ) && ! is_numeric( $value ) ) {
+					throw new InvalidArgumentException( 'Greater / less than conditions need a number.' );
 				}
 				$rules[] = [
 					'field'    => $field,
@@ -87,6 +91,16 @@ final class FieldConditionalLogic {
 		return false;
 	}
 
+	/** @param list<string> $list @param callable(string):bool $test */
+	private static function any( array $list, callable $test ): bool {
+		return array_filter( $list, $test ) !== [];
+	}
+
+	/** @return list<string> */
+	private static function split( string $value ): array {
+		return array_values( array_filter( array_map( 'trim', explode( ',', $value ) ), static fn ( string $item ): bool => $item !== '' ) );
+	}
+
 	/** @param array{field:string,operator:string,value:string} $rule */
 	private static function matches( array $rule, mixed $value ): bool {
 		$list  = array_map( static fn ( mixed $item ): string => is_bool( $item ) ? ( $item ? '1' : '0' ) : ( is_scalar( $item ) ? (string) $item : '' ), is_array( $value ) ? $value : ( $value === null ? [] : [ $value ] ) );
@@ -97,8 +111,17 @@ final class FieldConditionalLogic {
 			'!='        => ! in_array( $rule['value'], $list, true ),
 			'empty'     => $empty,
 			'not_empty' => ! $empty,
-			'contains'  => array_filter( $list, static fn ( string $item ): bool => $rule['value'] !== '' && str_contains( $item, $rule['value'] ) ) !== [],
-			default     => false,
+			'contains'     => self::any( $list, static fn ( string $item ): bool => $rule['value'] !== '' && str_contains( $item, $rule['value'] ) ),
+			'not_contains' => ! self::any( $list, static fn ( string $item ): bool => $rule['value'] !== '' && str_contains( $item, $rule['value'] ) ),
+			'starts_with'  => self::any( $list, static fn ( string $item ): bool => $rule['value'] !== '' && str_starts_with( $item, $rule['value'] ) ),
+			'ends_with'    => self::any( $list, static fn ( string $item ): bool => $rule['value'] !== '' && str_ends_with( $item, $rule['value'] ) ),
+			'>'            => self::any( $list, static fn ( string $item ): bool => is_numeric( $item ) && (float) $item > (float) $rule['value'] ),
+			'>='           => self::any( $list, static fn ( string $item ): bool => is_numeric( $item ) && (float) $item >= (float) $rule['value'] ),
+			'<'            => self::any( $list, static fn ( string $item ): bool => is_numeric( $item ) && (float) $item < (float) $rule['value'] ),
+			'<='           => self::any( $list, static fn ( string $item ): bool => is_numeric( $item ) && (float) $item <= (float) $rule['value'] ),
+			'in'           => self::any( $list, static fn ( string $item ): bool => in_array( $item, self::split( $rule['value'] ), true ) ),
+			'not_in'       => ! self::any( $list, static fn ( string $item ): bool => in_array( $item, self::split( $rule['value'] ), true ) ),
+			default        => false,
 		};
 	}
 }
