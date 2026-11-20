@@ -39,6 +39,25 @@ final class EmailsModule implements ModuleInterface {
 			throw new LogicException( 'Emails requires the shared WordPress Ability bridge.' );
 		}$read = new EmailsReadService( $definitions );
 		$services->set( self::SERVICE_READ, $read );
+		$core = new CoreEmailOverrides( $definitions );
+		$abilities->register(
+			new AbilityDescriptor(
+				name: CoreEmailOverrides::ABILITY,
+				ownerSurfaceId: EmailTemplateDefinition::OWNER_SURFACE_ID,
+				capability: 'manage_options',
+				mutates: true,
+				channels: [ ExecutionChannel::Internal, ExecutionChannel::Ui, ExecutionChannel::Rest ],
+				inputSchema: [ 'type' => 'object' ],
+				outputSchema: [ 'type' => 'object' ],
+			),
+			$core,
+		);
+		$services->set( 'module.emails.core-overrides', $core );
+		$contexts = $services->has( 'platform.abilities.contexts' ) ? $services->get( 'platform.abilities.contexts' ) : null;
+		if ( function_exists( 'add_filter' ) && $contexts instanceof \WPEssential\Platform\WordPress\Abilities\WordPressExecutionContextFactory ) {
+			$core->register();
+			$core->registerAdmin( $abilities, $contexts, \WPEssential\Platform\Admin\PlatformAdminController::PAGE_SLUG );
+		}
 		$channels = [ ExecutionChannel::Internal, ExecutionChannel::Ui, ExecutionChannel::Rest ];
 		$this->registerAbility(
 			$abilities,
