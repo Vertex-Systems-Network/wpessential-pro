@@ -61,7 +61,7 @@ test('Custom Fields: published group shows on the post editor and stores values'
     await expect(root.getByText(/Field Group (saved|created|updated)/i).first()).toBeVisible();
     await openAdmin(page, 'wpessential-fields');
     await page.locator('tr').filter({ hasText: key }).getByRole('button', { name: 'Publish' }).click();
-    await expect(page.locator('tr').filter({ hasText: key })).toContainText('published');
+    await expect(page.locator('tr').filter({ hasText: key })).toContainText('Published');
   });
 
   await audit('custom-fields', 'meta registered; value saved through REST', async () => {
