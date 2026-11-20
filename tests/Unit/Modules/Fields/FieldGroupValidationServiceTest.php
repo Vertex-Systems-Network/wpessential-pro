@@ -84,6 +84,27 @@ final class FieldGroupValidationServiceTest extends TestCase
         self::assertSame(2, $report['candidate']['field_count']);
     }
 
+    public function testTermAndUserGroupsPublishWithTheirOwnAnchors(): void
+    {
+        $service = new FieldGroupValidationService(new InMemoryDefinitionRepository(), new FieldGroupDefinitionNormalizer());
+        $fields = [['key' => 'color_code', 'label' => 'Colour', 'type' => 'color']];
+
+        $term = $service->validate(['status' => 'published', 'payload' => [
+            'group_key' => 't', 'title' => 'T', 'fields' => $fields,
+            'locations' => [[['source' => 'taxonomy', 'operator' => 'equals', 'value' => 'category']]],
+            'storage' => ['mode' => 'native_term_meta'],
+        ]]);
+        self::assertTrue($term['valid'], json_encode($term['issues']));
+
+        $user = $service->validate(['status' => 'published', 'payload' => [
+            'group_key' => 'u', 'title' => 'U', 'fields' => $fields,
+            'locations' => [[['source' => 'post_type', 'operator' => 'equals', 'value' => 'post']]],
+            'storage' => ['mode' => 'native_user_meta'],
+        ]]);
+        self::assertFalse($user['valid']);
+        self::assertContains('runtime_binding_unsupported', array_column($user['issues'], 'id'));
+    }
+
     public function testPublishIsBlockedWhenRuntimeCannotPlaceTheGroup(): void
     {
         $service = new FieldGroupValidationService(new InMemoryDefinitionRepository(), new FieldGroupDefinitionNormalizer());

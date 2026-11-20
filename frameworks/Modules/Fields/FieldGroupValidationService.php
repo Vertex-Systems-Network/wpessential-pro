@@ -71,7 +71,11 @@ final readonly class FieldGroupValidationService {
 						$candidate['fields'][ $index ]['uuid'] = sprintf( '00000000-0000-4000-8000-%012d', $index + 1 );
 					}
 				}
-				( new FieldGroupPostMetaBinder() )->assertBindable( $candidate );
+				if ( FieldTermUserScreens::targets( $candidate ) !== null ) {
+					FieldTermUserScreens::assertBindable( $candidate );
+				} else {
+					( new FieldGroupPostMetaBinder() )->assertBindable( $candidate );
+				}
 			} catch ( InvalidArgumentException $exception ) {
 				$issues[] = $this->issue( 'runtime_binding_unsupported', 'blocked', 'locations', $exception->getMessage() );
 			}
