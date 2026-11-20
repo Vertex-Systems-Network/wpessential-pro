@@ -52,6 +52,13 @@ final class FieldDefinitionNormalizer {
 			$settings = array_replace( $preset->defaults, $settings );
 		}
 
+		if ( array_key_exists( 'conditional_logic', $settings ) ) {
+			$settings['conditional_logic'] = FieldConditionalLogic::normalize( $settings['conditional_logic'] );
+			if ( $settings['conditional_logic'] === [] ) {
+				unset( $settings['conditional_logic'] );
+			}
+		}
+
 		if ( $descriptor->key === 'code_editor' && ( ( $settings['execute'] ?? false ) === true || ( $settings['eval'] ?? false ) === true ) ) {
 			throw new InvalidArgumentException( 'Code fields store text only and can never enable PHP/JS execution.' );
 		}
