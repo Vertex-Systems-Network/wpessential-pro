@@ -2,6 +2,7 @@ import {
 	collectGroupSettings,
 	fieldSettingsPanel,
 	mountGroupSettings,
+	setLocationChoices,
 	setGroupSettings,
 } from './fields-settings';
 
@@ -34,6 +35,7 @@ type Bootstrap = {
 	};
 	definitions: GroupDefinition[];
 	catalog: JsonObject & { types: CatalogType[] };
+	locations?: unknown;
 };
 type ValidationIssue = {
 	severity: string;
@@ -458,6 +460,7 @@ function bootBuilder( root: HTMLElement, bootstrap: Bootstrap ): void {
 	let busy = false;
 	const types = typeMap( bootstrap );
 	const builderForm = document.getElementById( 'wpessential-fields-form' );
+	setLocationChoices( bootstrap.locations );
 	if ( builderForm instanceof HTMLElement ) {
 		mountGroupSettings( builderForm );
 	}

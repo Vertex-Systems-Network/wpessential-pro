@@ -132,6 +132,8 @@ final class FieldAdminController {
 			],
 			'definitions' => $definitions,
 			'catalog'     => $catalog,
+			// Choices for the "Show this group when" value pickers; posts are searched through REST.
+			'locations'   => self::locationChoices(),
 		];
 		$json                                = function_exists( 'wp_json_encode' )
 			? wp_json_encode( $bootstrap, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT )
@@ -254,6 +256,35 @@ final class FieldAdminController {
 			echo '<span class="description">' . esc_html( $help ) . '</span>';
 		}
 		echo '</p>';
+	}
+
+	/**
+	 * Choices per location source as [value, label] pairs, plus the REST details for post search.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function locationChoices(): array {
+		if ( ! function_exists( 'get_post_types' ) ) {
+			return [];
+		}
+		$pairs = static fn ( array $objects ): array => array_values(
+			array_map( static fn ( object $object ): array => [ (string) $object->name, (string) $object->label ], $objects )
+		);
+		$roles = [];
+		foreach ( function_exists( 'wp_roles' ) ? wp_roles()->get_names() : [] as $key => $name ) {
+			$roles[] = [ (string) $key, translate_user_role( (string) $name ) ];
+		}
+
+		return [
+			'post_type'   => $pairs( get_post_types( [ 'show_ui' => true ], 'objects' ) ),
+			'post_status' => $pairs( get_post_stati( [ 'show_in_admin_status_list' => true ], 'objects' ) ),
+			'taxonomy'    => $pairs( get_taxonomies( [ 'show_ui' => true ], 'objects' ) ),
+			'user_role'   => $roles,
+			'search'      => [
+				'url'   => esc_url_raw( rest_url( 'wp/v2/search' ) ),
+				'nonce' => wp_create_nonce( 'wp_rest' ),
+			],
+		];
 	}
 
 	/** @return array{list<array<string,mixed>>,array<string,mixed>,?string} */
