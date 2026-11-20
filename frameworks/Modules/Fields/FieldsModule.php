@@ -274,6 +274,25 @@ final class FieldsModule implements ModuleInterface {
 		if ( $definitions instanceof DefinitionRepositoryInterface && function_exists( 'add_action' ) ) {
 			( new FieldPostMetaBox( $definitions, new FieldGroupPostTypeTargetCompiler(), $abilities, $contexts ) )->register();
 		}
+		if ( $definitions instanceof DefinitionRepositoryInterface && $abilities->descriptor( FieldTermUserScreens::ABILITY ) === null ) {
+			$screens = new FieldTermUserScreens( $definitions, $abilities, $contexts );
+			// Each call checks edit_term / edit_user for the object itself.
+			$abilities->register(
+				new AbilityDescriptor(
+					name: FieldTermUserScreens::ABILITY,
+					ownerSurfaceId: FieldGroupDefinitionNormalizer::OWNER_SURFACE_ID,
+					capability: 'read',
+					mutates: true,
+					channels: [ ExecutionChannel::Internal, ExecutionChannel::Ui, ExecutionChannel::Rest ],
+					inputSchema: [ 'type' => 'object' ],
+					outputSchema: [ 'type' => 'object' ],
+				),
+				$screens,
+			);
+			if ( function_exists( 'add_action' ) && function_exists( 'add_filter' ) ) {
+				$screens->register();
+			}
+		}
 	}
 
 	private function registerAbility(

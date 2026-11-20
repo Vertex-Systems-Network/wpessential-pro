@@ -2,20 +2,26 @@
 // Only keys that FieldGroupDefinitionNormalizer, FieldDefinitionNormalizer or FieldValueNormalizer read are offered.
 type JsonObject = Record< string, unknown >;
 
-// Runtime post-meta binding V1 (FieldGroupPostTypeTargetCompiler) resolves only these sources.
+// Post meta binds by post type; term meta by taxonomy; user meta by user role (FieldTermUserScreens).
 const LOCATION_SOURCES: [ string, string ][] = [
 	[ 'post_type', 'Post type' ],
 	[ 'post_status', 'Post status' ],
 	[ 'entity_id', 'Specific post ID' ],
+	[ 'taxonomy', 'Taxonomy (term meta)' ],
+	[ 'user_role', 'User role (user meta)' ],
 ];
+const ANCHOR_SOURCES = [ 'post_type', 'taxonomy', 'user_role' ];
 const LOCATION_OPERATORS: [ string, string ][] = [
 	[ 'equals', 'is' ],
 	[ 'not_equals', 'is not' ],
 	[ 'in', 'is one of' ],
 	[ 'not_in', 'is none of' ],
 ];
-// FieldGroupRuntimeStorageProjection binds native post meta only; other stored modes are shown but flagged.
-const STORAGE_MODES: [ string, string ][] = [ [ 'native_post_meta', 'Post meta' ] ];
+const STORAGE_MODES: [ string, string ][] = [
+	[ 'native_post_meta', 'Post meta' ],
+	[ 'native_term_meta', 'Term meta (taxonomy screens)' ],
+	[ 'native_user_meta', 'User meta (profile screens)' ],
+];
 const STRING_TYPES = [ 'text', 'textarea' ];
 // FieldValueNormalizer trims these by default; other string types keep spaces unless trim is set.
 const TRIM_BY_DEFAULT = [ 'text', 'email', 'url' ];
@@ -164,7 +170,7 @@ function ruleValue( operator: string, raw: string ): unknown {
 
 /** True when the rule selects post types (is / is one of, or a negated is not / is none of). */
 function isPostTypeAnchor( rule: JsonObject ): boolean {
-	if ( rule.source !== 'post_type' ) {
+	if ( typeof rule.source !== 'string' || ! ANCHOR_SOURCES.includes( rule.source ) ) {
 		return false;
 	}
 	const positive = rule.operator === 'equals' || rule.operator === 'in';
@@ -197,7 +203,7 @@ function collectLocations( host: HTMLElement ): JsonObject[][] {
 			}
 			if ( ! rules.some( isPostTypeAnchor ) ) {
 				throw new Error(
-					'Each rule group needs a "Post type is" or "Post type is one of" rule so the fields know where to appear.'
+					'Each rule group needs a "Post type", "Taxonomy" or "User role" rule with "is" or "is one of" so the fields know where to appear.'
 				);
 			}
 			groups.push( rules );
@@ -243,7 +249,7 @@ export function mountGroupSettings( form: HTMLElement ): void {
 		labelled(
 			'Storage',
 			selectBox( 'wpessential-fields-storage-mode', STORAGE_MODES, 'native_post_meta' ),
-			'Where values are saved. Post meta is the storage the runtime binds today.'
+			'Where values are saved. Term meta needs Taxonomy rules; user meta needs User role rules.'
 		),
 		tickBox( 'wpessential-fields-collapsible', 'Editors can collapse this group', false ),
 		tickBox( 'wpessential-fields-collapsed', 'Start collapsed', false ),
@@ -679,8 +685,13 @@ export function fieldSettingsPanel( field: JsonObject, index: number ): HTMLDeta
 		grid.append( labelled( 'Date precision', precision ) );
 	}
 
+	// Group and repeater manage their own rows; the normalizer rejects common cloning on them.
+	if ( type === 'group' || type === 'repeater' ) {
+		return box;
+	}
+
 	// Cloning: the normalizer reads these top-level keys and folds them into `repeatability`.
-	const clone = ( key: string, fallback: unknown ): unknown => ( key in field ? field[ key ] : fallback );
+	const clone =( key: string, fallback: unknown ): unknown => ( key in field ? field[ key ] : fallback );
 	const cloning = clone( 'cloneable', repeat.enabled ) === true;
 	// Reordering needs cloning, so the sortable box follows the cloneable box.
 	const syncSortable = ( on: boolean ): void => {
