@@ -155,6 +155,26 @@ final class CustomTablesModule implements ModuleInterface {
 		if ( function_exists( 'add_action' ) ) {
 			$builder->register( $abilities, $contexts );
 		}
+
+		global $wpdb;
+		if ( is_object( $wpdb ) ) {
+			$items = new CustomTablesItems( $definitions, $wpdb, $this->sitePrefix );
+			$abilities->register(
+				new AbilityDescriptor(
+					name: CustomTablesItems::ABILITY,
+					ownerSurfaceId: TableDefinitionCompiler::OWNER_SURFACE_ID,
+					capability: CustomTablesItems::CAPABILITY,
+					mutates: true,
+					channels: self::CHANNELS,
+					inputSchema: [ 'type' => 'object' ],
+					outputSchema: [ 'type' => 'object' ],
+				),
+				$items,
+			);
+			if ( function_exists( 'add_action' ) ) {
+				$items->register( $abilities, $contexts );
+			}
+		}
 		CustomTablesCapabilities::register();
 	}
 
