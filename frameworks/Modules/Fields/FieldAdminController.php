@@ -19,6 +19,8 @@ use WPEssential\Platform\Auth\ExecutionContext;
 use WPEssential\Platform\WordPress\Abilities\WordPressExecutionContextFactory;
 use WPEssential\Platform\WordPress\Ajax\AjaxDispatcher;
 use WPEssential\Platform\Admin\Ui\Shell;
+use WPEssential\Platform\Admin\Ui\Button;
+use WPEssential\Platform\Admin\Ui\Icon;
 
 final class FieldAdminController {
 
@@ -136,6 +138,10 @@ final class FieldAdminController {
 				'status'   => [
 					'type'  => 'fields.status.group',
 					'nonce' => $this->ajax->createNonce( 'fields.status.group' ),
+				],
+				'lifecycle' => [
+					'type'  => 'fields.lifecycle.group',
+					'nonce' => $this->ajax->createNonce( 'fields.lifecycle.group' ),
 				],
 			],
 			'definitions' => $definitions,
@@ -307,10 +313,11 @@ final class FieldAdminController {
 	 * @param array<string,array{attached:string,values:int,dependencies:int}> $meta
 	 */
 	private function renderDefinitions( array $definitions, array $meta = [] ): void {
-		echo '<section class="wpessential-fields-panel" aria-labelledby="wpessential-fields-list-title">';
-		echo '<div class="wpessential-fields-list-heading"><h2 id="wpessential-fields-list-title">' . esc_html__( 'Saved field groups', 'wpessential' ) . '</h2>';
-		echo '<button type="button" class="button" id="wpessential-fields-refresh">' . esc_html__( 'Refresh', 'wpessential' ) . '</button></div>';
-		echo '<table class="widefat striped" aria-label="' . esc_attr__( 'Saved Field Groups', 'wpessential' ) . '"><thead><tr>';
+		// Same panel, table toolkit and row actions as the post type list.
+		echo '<section class="wpessential-cpt-panel wpe-ui-panel wpe-ui-panel--flush wpe-ui-builder__list" aria-labelledby="wpessential-fields-list-title">';
+		echo '<div class="wpessential-cpt-list-heading wpe-ui-panel__head"><span class="wpe-ui-icon">' . Icon::render( 'layers', 20 ) . '</span><h2 id="wpessential-fields-list-title">' . esc_html__( 'Saved field groups', 'wpessential' ) . '</h2>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG.
+		echo Button::button( __( 'Refresh', 'wpessential' ), 'ghost', [ 'id' => 'wpessential-fields-refresh' ], true, 'refresh' ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- toolkit components escape their own output.
+		echo '<table class="widefat striped" id="wpessential-fields-table" aria-label="' . esc_attr__( 'Saved Field Groups', 'wpessential' ) . '"><thead><tr>';
 		echo '<th scope="col">' . esc_html__( 'Title', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Key', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Attached to', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Fields', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Saved values', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Dependencies', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Status', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Revision', 'wpessential' ) . '</th><th scope="col">' . esc_html__( 'Actions', 'wpessential' ) . '</th></tr></thead>';
 		echo '<tbody id="wpessential-fields-definitions">';
 		foreach ( $definitions as $definition ) {

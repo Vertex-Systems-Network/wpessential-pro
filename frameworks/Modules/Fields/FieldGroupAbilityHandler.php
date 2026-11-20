@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 use InvalidArgumentException;
 use RuntimeException;
 use WPEssential\Contracts\AbilityHandlerInterface;
+use WPEssential\Contracts\DefinitionDeletableRepositoryInterface;
 use WPEssential\Contracts\DefinitionRepositoryInterface;
 use WPEssential\Platform\Auth\ExecutionContext;
 use WPEssential\Platform\Definitions\Definition;
@@ -22,6 +23,8 @@ final readonly class FieldGroupAbilityHandler implements AbilityHandlerInterface
 	public const GET    = 'get';
 	public const SAVE   = 'save';
 	public const STATUS = 'status';
+	/** Lock / unlock / trash / restore / delete, like the post type builder. */
+	public const LIFECYCLE = 'lifecycle';
 
 	private FieldIdentityAssigner $identities;
 
@@ -32,7 +35,7 @@ final readonly class FieldGroupAbilityHandler implements AbilityHandlerInterface
 		private string $action,
 		?FieldIdentityAssigner $identities = null,
 	) {
-		if ( ! in_array( $this->action, [ self::LIST, self::GET, self::SAVE, self::STATUS ], true ) ) {
+		if ( ! in_array( $this->action, [ self::LIST, self::GET, self::SAVE, self::STATUS, self::LIFECYCLE ], true ) ) {
 			throw new InvalidArgumentException( 'Unsupported Field Group ability action.' );
 		}
 		$this->identities = $identities ?? new FieldIdentityAssigner( $definitions );
@@ -44,6 +47,7 @@ final readonly class FieldGroupAbilityHandler implements AbilityHandlerInterface
 			self::GET => $this->get( $input ),
 			self::SAVE => $this->save( $input ),
 			self::STATUS => $this->changeStatus( $input ),
+			self::LIFECYCLE => $this->lifecycle( $input ),
 			default => throw new RuntimeException( 'Unsupported Field Group ability action.' ),
 		};
 	}
@@ -144,6 +148,73 @@ final readonly class FieldGroupAbilityHandler implements AbilityHandlerInterface
 		);
 		$candidate = $this->withChecksum( $candidate );
 		$this->definitions->save( $candidate );
+		return [ 'definition' => $this->serialize( $candidate ) ];
+	}
+
+	/**
+	 * Locked groups cannot be trashed or deleted; only trashed, unlocked groups with no dependents are deleted.
+	 * Trashing a published group disables it first.
+	 *
+	 * @param array<string,mixed> $input
+	 * @return array<string,mixed>
+	 */
+	private function lifecycle( array $input ): array {
+		$existing = $this->owned( $this->requiredUuid( $input, 'id' ) );
+		$this->assertExpectedRevision( $input, $existing );
+		$action  = (string) ( $input['action'] ?? '' );
+		$locked  = ( $existing->payload['locked'] ?? false ) === true;
+		$trashed = ( $existing->payload['trashed'] ?? false ) === true;
+		if ( $action === 'delete' ) {
+			if ( $locked || ! $trashed ) {
+				throw new InvalidArgumentException( 'Only unlocked Field Groups in the Trash can be deleted permanently.' );
+			}
+			if ( $this->definitions->dependentsOf( $existing->id ) !== [] ) {
+				throw new InvalidArgumentException( 'Other definitions depend on this Field Group; remove those links first.' );
+			}
+			if ( ! $this->definitions instanceof DefinitionDeletableRepositoryInterface || ! $this->definitions->deleteIfCurrentRevision( $existing->id, $existing->revision ) ) {
+				throw new RuntimeException( 'The Field Group could not be deleted; reload and try again.' );
+			}
+
+			return [ 'deleted' => $existing->id ];
+		}
+		$payload = $existing->payload;
+		$status  = $existing->status;
+		switch ( $action ) {
+			case 'lock':
+			case 'unlock':
+				unset( $payload['locked'] );
+				if ( $action === 'lock' ) {
+					$payload['locked'] = true;
+				}
+				break;
+			case 'trash':
+				if ( $locked ) {
+					throw new InvalidArgumentException( 'This Field Group is locked. Unlock it before moving it to the Trash.' );
+				}
+				$payload['trashed'] = true;
+				$status             = $status === DefinitionStatus::Published ? DefinitionStatus::Disabled : $status;
+				break;
+			case 'restore':
+				unset( $payload['trashed'] );
+				break;
+			default:
+				throw new InvalidArgumentException( 'Field Group lifecycle action must be lock, unlock, trash, restore or delete.' );
+		}
+		$candidate = $this->withChecksum(
+			new Definition(
+				id: $existing->id,
+				slug: $existing->slug,
+				type: $existing->type,
+				schemaVersion: $existing->schemaVersion,
+				ownerSurfaceId: $existing->ownerSurfaceId,
+				status: $status,
+				payload: $this->normalizer->normalize( $payload, false ),
+				revision: $existing->revision + 1,
+				dependencies: $existing->dependencies,
+			)
+		);
+		$this->definitions->save( $candidate );
+
 		return [ 'definition' => $this->serialize( $candidate ) ];
 	}
 
