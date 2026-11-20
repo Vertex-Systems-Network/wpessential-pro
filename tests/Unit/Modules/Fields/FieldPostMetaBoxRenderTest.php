@@ -16,6 +16,9 @@ namespace {
     if (!function_exists('esc_html__')) {
         function esc_html__($v, $d = null): string { return htmlspecialchars((string) $v, ENT_QUOTES); }
     }
+    if (!function_exists('esc_attr__')) {
+        function esc_attr__($v, $d = null): string { return htmlspecialchars((string) $v, ENT_QUOTES); }
+    }
     if (!function_exists('__')) {
         function __($v, $d = null): string { return (string) $v; }
     }
@@ -53,6 +56,8 @@ namespace WPEssential\Tests\Unit\Modules\Fields {
             self::assertStringContainsString('name="wpe_fields[g][u3][1][city]"', $html);
             self::assertStringNotContainsString('type="select"', $html);
             self::assertStringNotContainsString('type="repeater"', $html);
+            self::assertStringContainsString('<code>size</code>', $html);
+            self::assertStringContainsString('data-key="size"', $html);
         }
     }
 }
