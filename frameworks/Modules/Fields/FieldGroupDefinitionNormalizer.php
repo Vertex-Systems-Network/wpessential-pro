@@ -41,6 +41,13 @@ final readonly class FieldGroupDefinitionNormalizer {
 		'settings_page',
 		'custom_table',
 		'frontend_context',
+		'post_format',
+		'post_parent',
+		'post_term',
+		'term_parent',
+		'user_screen',
+		'current_user_role',
+		'current_user',
 	];
 
 	private const LOCATION_OPERATORS = [ 'equals', 'not_equals', 'in', 'not_in' ];

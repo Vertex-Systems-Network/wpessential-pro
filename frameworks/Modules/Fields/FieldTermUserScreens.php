@@ -144,7 +144,7 @@ final class FieldTermUserScreens implements AbilityHandlerInterface {
 	}
 
 	public function renderTermAdd( string $taxonomy ): void {
-		$groups = $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [] ] );
+		$groups = $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [], 'term_parent' => [] ] + FieldLocationMatcher::currentUser() );
 		if ( $groups === [] ) {
 			return;
 		}
@@ -154,12 +154,12 @@ final class FieldTermUserScreens implements AbilityHandlerInterface {
 	}
 
 	public function renderTermEdit( object $term, string $taxonomy ): void {
-		$this->renderGroups( $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [ (string) ( $term->term_id ?? '' ) ] ] ), 'term', (int) $term->term_id );
+		$this->renderGroups( $this->matching( $this->groupsFor( 'term', [ $taxonomy ] ), [ 'taxonomy' => [ $taxonomy ], 'term' => [ (string) ( $term->term_id ?? '' ) ], 'term_parent' => [ (string) ( $term->parent ?? 0 ) ] ] + FieldLocationMatcher::currentUser() ), 'term', (int) $term->term_id );
 	}
 
 	public function renderUser( object $user ): void {
 		$roles  = array_values( array_map( 'strval', (array) ( $user->roles ?? [] ) ) );
-		$groups = $this->matching( $this->groupsFor( 'user', $roles ), [ 'user_role' => $roles, 'user' => [ (string) ( $user->ID ?? '' ) ] ] );
+		$groups = $this->matching( $this->groupsFor( 'user', $roles ), [ 'user_role' => $roles, 'user' => [ (string) ( $user->ID ?? '' ) ], 'user_screen' => [ defined( 'IS_PROFILE_PAGE' ) && IS_PROFILE_PAGE ? 'profile' : 'edit' ] ] + FieldLocationMatcher::currentUser() );
 		foreach ( $groups as $group ) {
 			echo '<h2>' . esc_html( (string) ( $group->payload['title'] ?? '' ) ) . '</h2><table class="form-table" role="presentation"><tbody>';
 			$this->renderGroups( [ $group ], 'user', (int) $user->ID );

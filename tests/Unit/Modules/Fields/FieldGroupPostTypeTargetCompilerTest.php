@@ -121,7 +121,7 @@ final class FieldGroupPostTypeTargetCompilerTest extends TestCase
             ],
             'locations' => [[
                 ['source' => 'post_type', 'operator' => 'equals', 'value' => 'page'],
-                ['source' => 'page_template', 'operator' => 'equals', 'value' => 'templates/landing.php'],
+                ['source' => 'media_mime', 'operator' => 'equals', 'value' => 'image/png'],
             ]],
         ], true);
 

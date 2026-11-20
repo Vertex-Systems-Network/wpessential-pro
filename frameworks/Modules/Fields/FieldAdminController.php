@@ -379,11 +379,22 @@ final class FieldAdminController {
 			$roles[] = [ (string) $key, translate_user_role( (string) $name ) ];
 		}
 
+		$templates = [ [ 'default', __( 'Default template', 'wpessential' ) ] ];
+		foreach ( function_exists( 'wp_get_theme' ) ? wp_get_theme()->get_page_templates() : [] as $file => $name ) {
+			$templates[] = [ (string) $file, (string) $name ];
+		}
+		$formats = [];
+		foreach ( function_exists( 'get_post_format_strings' ) ? get_post_format_strings() : [] as $key => $name ) {
+			$formats[] = [ (string) $key, (string) $name ];
+		}
+
 		return [
 			'post_type'   => $pairs( get_post_types( [ 'show_ui' => true ], 'objects' ) ),
 			'post_status' => $pairs( get_post_stati( [ 'show_in_admin_status_list' => true ], 'objects' ) ),
 			'taxonomy'    => $pairs( get_taxonomies( [ 'show_ui' => true ], 'objects' ) ),
 			'user_role'   => $roles,
+			'page_template' => $templates,
+			'post_format' => $formats,
 			'search'      => [
 				'url'   => esc_url_raw( rest_url( 'wp/v2/search' ) ),
 				'nonce' => wp_create_nonce( 'wp_rest' ),

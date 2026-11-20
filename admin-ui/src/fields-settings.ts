@@ -1,162 +1,12 @@
+import { MODES, visibilityEditor } from './visibility';
+
+export { setLocationChoices } from './visibility';
 // Field Group settings and per-field settings (Penpot page 10 · Fields, boards F5 and 14b).
 // Only keys that FieldGroupDefinitionNormalizer, FieldDefinitionNormalizer or FieldValueNormalizer read are offered.
 type JsonObject = Record< string, unknown >;
 
-// Post meta binds by post type; term meta by taxonomy; user meta by user role (FieldTermUserScreens).
-const LOCATION_SOURCES: [ string, string ][] = [
-	[ 'post_type', 'Post type' ],
-	[ 'post_status', 'Post status' ],
-	[ 'taxonomy', 'Taxonomy (term meta)' ],
-	[ 'user_role', 'User role (user meta)' ],
-];
-const ANCHOR_SOURCES = [ 'post_type', 'taxonomy', 'user_role' ];
-// Each storage mode offers only the rule sources that can place it.
-const SOURCES_BY_MODE: Record< string, string[] > = {
-	native_post_meta: [ 'post_type', 'post_status' ],
-	native_term_meta: [ 'taxonomy' ],
-	native_user_meta: [ 'user_role' ],
-};
-
-// A rule on these sources can be narrowed to specific objects, saved as a second "is one of" rule.
-const OBJECT_SOURCES: Record< string, { source: string; label: string; kind: string; ids: boolean } > = {
-	post_type: { source: 'entity_id', label: 'Only these posts (optional)', kind: 'post', ids: false },
-	post_status: { source: 'entity_id', label: 'Only these posts (optional)', kind: 'post', ids: false },
-	taxonomy: { source: 'term', label: 'Only these terms (optional)', kind: 'term', ids: true },
-	user_role: { source: 'user', label: 'Only these users (optional)', kind: 'user', ids: true },
-};
-
-let CHOICES: Record< string, [ string, string ][] > = {};
-let SEARCH: { url: string; nonce: string } | null = null;
-
-/** Lists for the value pickers, from the builder bootstrap (post types, statuses, taxonomies, roles). */
-export function setLocationChoices( data: unknown ): void {
-	if ( ! isObject( data ) ) {
-		return;
-	}
-	const next: Record< string, [ string, string ][] > = {};
-	for ( const [ key, list ] of Object.entries( data ) ) {
-		if ( Array.isArray( list ) ) {
-			next[ key ] = list.filter(
-				( pair ): pair is [ string, string ] => Array.isArray( pair ) && typeof pair[ 0 ] === 'string' && typeof pair[ 1 ] === 'string'
-			);
-		}
-	}
-	CHOICES = next;
-	const search = data.search;
-	SEARCH = isObject( search ) && typeof search.url === 'string' && typeof search.nonce === 'string' ? { url: search.url, nonce: search.nonce } : null;
-}
-
-const MULTI_OPERATORS = [ 'in', 'not_in' ];
-
-/**
- * Search box plus a select of the values that fit the rule's source; several values for "is one of".
- * Posts (Specific post ID) are found through the WordPress REST search as you type.
- */
-function valuePicker( source: string, operator: string, current: string[] ): HTMLSpanElement {
-	const box = el( 'span', 'wpessential-fields-value-picker' );
-	const search = el( 'input' );
-	search.type = 'search';
-	search.placeholder = source === 'entity_id' ? 'Type to search posts…' : 'Search…';
-	search.setAttribute( 'aria-label', 'Search rule values' );
-	const select = el( 'select' );
-	select.dataset.wpessentialFieldsRule = 'value';
-	select.setAttribute( 'aria-label', 'Rule value' );
-	select.multiple = MULTI_OPERATORS.includes( operator );
-	if ( select.multiple ) {
-		select.size = 5;
-	}
-	const add = ( value: string, label: string, chosen: boolean ): void => {
-		if ( select.querySelector( `option[value="${ CSS.escape( value ) }"]` ) ) {
-			return;
-		}
-		const option = el( 'option', undefined, label );
-		option.value = value;
-		option.selected = chosen;
-		select.append( option );
-	};
-	if ( ! select.multiple ) {
-		add( '', '— Select —', current.length === 0 );
-	}
-	for ( const value of current ) {
-		const known = ( CHOICES[ source ] ?? [] ).find( ( [ key ] ) => key === value );
-		add( value, known ? known[ 1 ] : source === 'entity_id' ? `#${ value }` : value, true );
-	}
-	for ( const [ value, label ] of CHOICES[ source ] ?? [] ) {
-		add( value, `${ label } (${ value })`, false );
-	}
-	let timer = 0;
-	search.addEventListener( 'input', () => {
-		const term = search.value.trim().toLowerCase();
-		for ( const option of select.options ) {
-			option.hidden = term !== '' && option.value !== '' && ! option.selected && ! option.text.toLowerCase().includes( term );
-		}
-		if ( source !== 'entity_id' || SEARCH === null || term.length < 2 ) {
-			return;
-		}
-		window.clearTimeout( timer );
-		const endpoint = SEARCH;
-		timer = window.setTimeout( async () => {
-			const url = `${ endpoint.url }${ endpoint.url.includes( '?' ) ? '&' : '?' }type=post&per_page=20&search=${ encodeURIComponent( term ) }`;
-			const response = await fetch( url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': endpoint.nonce } } );
-			const results: unknown = response.ok ? await response.json() : [];
-			for ( const item of Array.isArray( results ) ? results : [] ) {
-				if ( isObject( item ) && typeof item.id === 'number' ) {
-					add( String( item.id ), `${ typeof item.title === 'string' ? item.title : '' } (#${ item.id }, ${ typeof item.subtype === 'string' ? item.subtype : 'post' })`, false );
-				}
-			}
-		}, 300 );
-	} );
-	box.append( search, select );
-	return box;
-}
-
-function pickedValues( row: HTMLElement ): string[] {
-	const select = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="value"]' );
-	return select ? Array.from( select.selectedOptions, ( option ) => option.value ).filter( ( value ) => value !== '' ) : [];
-}
-
-function storageMode(): string {
-	const box = document.getElementById( 'wpessential-fields-storage-mode' );
-	return box instanceof HTMLSelectElement && box.value !== '' ? box.value : 'native_post_meta';
-}
-
-/** Sources for the current storage mode; a saved source outside them stays so editing never drops it. */
-function sourcesFor( mode: string, keep = '' ): [ string, string ][] {
-	const allowed = SOURCES_BY_MODE[ mode ] ?? SOURCES_BY_MODE.native_post_meta ?? [];
-	return LOCATION_SOURCES.filter( ( [ key ] ) => allowed.includes( key ) || key === keep );
-}
-
-/** Rebuilds every rule's source list after the storage mode changes. */
-function syncSources(): void {
-	const mode = storageMode();
-	const allowed = SOURCES_BY_MODE[ mode ] ?? SOURCES_BY_MODE.native_post_meta ?? [];
-	for ( const row of document.querySelectorAll< HTMLElement >( '.wpessential-fields-location-rule' ) ) {
-		const source = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="source"]' );
-		if ( ! source ) {
-			continue;
-		}
-		const next = allowed.includes( source.value ) ? source.value : ( allowed[ 0 ] ?? 'post_type' );
-		source.replaceChildren();
-		for ( const [ key, label ] of sourcesFor( mode ) ) {
-			const option = el( 'option', undefined, label );
-			option.value = key;
-			source.append( option );
-		}
-		source.value = next;
-		source.dispatchEvent( new Event( 'change' ) );
-	}
-}
-const LOCATION_OPERATORS: [ string, string ][] = [
-	[ 'equals', 'is' ],
-	[ 'not_equals', 'is not' ],
-	[ 'in', 'is one of' ],
-	[ 'not_in', 'is none of' ],
-];
-const STORAGE_MODES: [ string, string ][] = [
-	[ 'native_post_meta', 'Post meta' ],
-	[ 'native_term_meta', 'Term meta (taxonomy screens)' ],
-	[ 'native_user_meta', 'User meta (profile screens)' ],
-];
+const STORAGE_MODES = MODES;
+const VISIBILITY = visibilityEditor();
 const STRING_TYPES = [ 'text', 'textarea' ];
 // FieldValueNormalizer trims these by default; other string types keep spaces unless trim is set.
 const TRIM_BY_DEFAULT = [ 'text', 'email', 'url' ];
@@ -244,210 +94,6 @@ function text( object: JsonObject, key: string, fallback: string ): string {
 	return typeof raw === 'string' ? raw : fallback;
 }
 
-/** Optional specific posts / terms / users for a rule, found through REST search; plus typed IDs for terms and users. */
-function objectPicker( source: string, current: string[] ): HTMLSpanElement {
-	const box = el( 'span', 'wpessential-fields-object-picker' );
-	const spec = OBJECT_SOURCES[ source ];
-	if ( ! spec ) {
-		return box;
-	}
-	const search = el( 'input' );
-	search.type = 'search';
-	search.placeholder = `Type to search ${ spec.kind }s…`;
-	search.setAttribute( 'aria-label', `Search ${ spec.kind }s` );
-	const select = el( 'select' );
-	select.multiple = true;
-	select.size = 4;
-	select.dataset.wpessentialFieldsRule = 'objects';
-	select.setAttribute( 'aria-label', spec.label );
-	const add = ( id: string, label: string, chosen: boolean ): void => {
-		if ( select.querySelector( `option[value="${ CSS.escape( id ) }"]` ) ) {
-			return;
-		}
-		const option = el( 'option', undefined, label );
-		option.value = id;
-		option.selected = chosen;
-		select.append( option );
-	};
-	const ids = el( 'input' );
-	ids.type = 'text';
-	ids.dataset.wpessentialFieldsRule = 'ids';
-	ids.placeholder = 'Custom IDs, e.g. 12, 40';
-	ids.setAttribute( 'aria-label', `Custom ${ spec.kind } IDs` );
-	if ( spec.ids ) {
-		ids.value = current.join( ', ' );
-	} else {
-		for ( const id of current ) {
-			add( id, `#${ id }`, true );
-		}
-	}
-	let timer = 0;
-	search.addEventListener( 'input', () => {
-		const term = search.value.trim();
-		if ( SEARCH === null || term.length < 2 ) {
-			return;
-		}
-		window.clearTimeout( timer );
-		const endpoint = SEARCH;
-		timer = window.setTimeout( async () => {
-			const base = spec.kind === 'user' ? endpoint.url.replace( /search\/?$/, 'users' ) : endpoint.url;
-			const query = spec.kind === 'user' ? 'context=edit&per_page=20' : `type=${ spec.kind }&per_page=20`;
-			const url = `${ base }${ base.includes( '?' ) ? '&' : '?' }${ query }&search=${ encodeURIComponent( term ) }`;
-			const response = await fetch( url, { credentials: 'same-origin', headers: { 'X-WP-Nonce': endpoint.nonce } } );
-			const results: unknown = response.ok ? await response.json() : [];
-			for ( const item of Array.isArray( results ) ? results : [] ) {
-				if ( isObject( item ) && typeof item.id === 'number' ) {
-					const name = typeof item.title === 'string' ? item.title : typeof item.name === 'string' ? item.name : '';
-					const kind = typeof item.subtype === 'string' ? item.subtype : spec.kind;
-					add( String( item.id ), `${ name } (#${ item.id }, ${ kind })`, false );
-				}
-			}
-		}, 300 );
-	} );
-	const label = el( 'span', 'description', spec.label );
-	box.append( label, search, select );
-	if ( spec.ids ) {
-		box.append( ids );
-	}
-	return box;
-}
-
-function pickedObjects( row: HTMLElement ): string[] {
-	const select = row.querySelector< HTMLSelectElement >( '[data-wpessential-fields-rule="objects"]' );
-	const typed = row.querySelector< HTMLInputElement >( '[data-wpessential-fields-rule="ids"]' )?.value ?? '';
-	const ids = [ ...( select ? Array.from( select.selectedOptions, ( option ) => option.value ) : [] ), ...typed.split( ',' ).map( ( id ) => id.trim() ) ];
-	return [ ...new Set( ids.filter( ( id ) => /^\d+$/.test( id ) ) ) ];
-}
-
-function locationRow( rule: JsonObject, objects: string[] = [] ): HTMLDivElement {
-	const row = el( 'div', 'wpessential-fields-location-rule' );
-	const mode = storageMode();
-	const saved = text( rule, 'source', '' );
-	const sources = sourcesFor( mode, saved );
-	const source = selectBox( '', sources, saved !== '' ? saved : ( sources[ 0 ]?.[ 0 ] ?? 'post_type' ) );
-	source.dataset.wpessentialFieldsRule = 'source';
-	source.setAttribute( 'aria-label', 'Rule source' );
-	const operator = selectBox( '', LOCATION_OPERATORS, text( rule, 'operator', 'equals' ) );
-	operator.dataset.wpessentialFieldsRule = 'operator';
-	operator.setAttribute( 'aria-label', 'Rule operator' );
-	const raw = rule.value;
-	const current = ( Array.isArray( raw ) ? raw : raw === undefined || raw === null || raw === '' ? [] : [ raw ] ).map( String );
-	let picker = valuePicker( source.value, operator.value, current );
-	// Source or operator changes rebuild the picker and keep the values that still fit.
-	let shownSource = source.value;
-	const rebuild = (): void => {
-		// Values of another source (a post type is not a role) are dropped when the source changes.
-		const same = source.value === shownSource;
-		const keep = same ? pickedValues( row ) : [];
-		const keepObjects = same ? pickedObjects( row ) : [];
-		shownSource = source.value;
-		const next = valuePicker( source.value, operator.value, keep );
-		picker.replaceWith( next );
-		picker = next;
-		const nextObjects = objectPicker( source.value, keepObjects );
-		objectBox.replaceWith( nextObjects );
-		objectBox = nextObjects;
-	};
-	let objectBox = objectPicker( source.value, objects );
-	source.addEventListener( 'change', rebuild );
-	operator.addEventListener( 'change', rebuild );
-	const negate = el( 'input' );
-	negate.type = 'checkbox';
-	negate.dataset.wpessentialFieldsRule = 'negate';
-	negate.checked = rule.negate === true;
-	const negateLabel = el( 'label', undefined, ' Negate' );
-	negateLabel.prepend( negate );
-	const and = el( 'button', 'button button-small', 'AND' );
-	and.type = 'button';
-	and.dataset.wpessentialFieldsRuleAction = 'and';
-	const remove = el( 'button', 'button-link', 'Remove' );
-	remove.type = 'button';
-	remove.dataset.wpessentialFieldsRuleAction = 'remove';
-	row.append( source, operator, picker, negateLabel, and, remove, objectBox );
-	return row;
-}
-
-function locationGroup( rules: JsonObject[] ): HTMLDivElement {
-	const group = el( 'div', 'wpessential-fields-location-group' );
-	// A specific-objects rule right after its anchor rule is edited on that rule's row.
-	const list = rules.length > 0 ? rules : [ {} ];
-	for ( let index = 0; index < list.length; index++ ) {
-		const rule = list[ index ] ?? {};
-		const next = list[ index + 1 ];
-		const spec = OBJECT_SOURCES[ text( rule, 'source', '' ) ];
-		if ( spec && next && next.source === spec.source && next.operator === 'in' && next.negate !== true && Array.isArray( next.value ) ) {
-			group.append( locationRow( rule, next.value.map( String ) ) );
-			index++;
-			continue;
-		}
-		group.append( locationRow( rule ) );
-	}
-	return group;
-}
-
-function renderLocations( host: HTMLElement, locations: unknown ): void {
-	host.replaceChildren();
-	const groups = Array.isArray( locations ) ? locations : [];
-	for ( const group of groups ) {
-		const rules = Array.isArray( group ) ? group.filter( isObject ) : [];
-		host.append( locationGroup( rules ) );
-	}
-}
-
-/** True when the rule selects post types (is / is one of, or a negated is not / is none of). */
-function isPostTypeAnchor( rule: JsonObject ): boolean {
-	if ( typeof rule.source !== 'string' || ! ANCHOR_SOURCES.includes( rule.source ) ) {
-		return false;
-	}
-	const positive = rule.operator === 'equals' || rule.operator === 'in';
-	return rule.negate === true ? ! positive : positive;
-}
-
-function isEmptyValue( raw: unknown ): boolean {
-	return Array.isArray( raw ) ? raw.length === 0 : raw === '';
-}
-
-function collectLocations( host: HTMLElement ): JsonObject[][] {
-	const groups: JsonObject[][] = [];
-	for ( const group of host.querySelectorAll< HTMLElement >( '.wpessential-fields-location-group' ) ) {
-		const rules: JsonObject[] = [];
-		for ( const row of group.querySelectorAll< HTMLElement >( '.wpessential-fields-location-rule' ) ) {
-			const part = ( key: string ): HTMLInputElement | HTMLSelectElement | null =>
-				row.querySelector( `[data-wpessential-fields-rule="${ key }"]` );
-			const operator = part( 'operator' )?.value ?? 'equals';
-			const source = part( 'source' )?.value ?? 'post_type';
-			rules.push( {
-				source,
-				operator,
-				value: MULTI_OPERATORS.includes( operator ) ? pickedValues( row ) : ( pickedValues( row )[ 0 ] ?? '' ),
-				negate: ( part( 'negate' ) as HTMLInputElement | null )?.checked ?? false,
-			} );
-			const objects = pickedObjects( row );
-			const spec = OBJECT_SOURCES[ source ];
-			if ( spec && objects.length > 0 ) {
-				rules.push( { source: spec.source, operator: 'in', value: objects, negate: false } );
-			}
-		}
-		if ( rules.length > 0 ) {
-			// Checked here because the server accepts these but runtime binding rejects them.
-			if ( rules.some( ( rule ) => isEmptyValue( rule.value ) ) ) {
-				throw new Error( 'Every location rule needs a value. Fill it in or remove the rule.' );
-			}
-			if ( ! rules.some( isPostTypeAnchor ) ) {
-				throw new Error(
-					{
-						native_term_meta: 'Each rule group needs a "Taxonomy is" or "Taxonomy is one of" rule so the fields know where to appear.',
-						native_user_meta: 'Each rule group needs a "User role is" or "User role is one of" rule so the fields know where to appear.',
-					}[ storageMode() ] ?? 'Each rule group needs a "Post type is" or "Post type is one of" rule so the fields know where to appear.'
-				);
-			}
-			groups.push( rules );
-		}
-	}
-	return groups;
-}
-
-/** Adds the group settings panel (presentation, storage, revisions, location rules) before the field list. */
 export function mountGroupSettings( form: HTMLElement ): void {
 	if ( document.getElementById( 'wpessential-fields-group-settings' ) ) {
 		return;
@@ -482,56 +128,24 @@ export function mountGroupSettings( form: HTMLElement ): void {
 			], 'below_label' )
 		),
 		labelled(
-			'Storage',
+			'Meta box for',
 			selectBox( 'wpessential-fields-storage-mode', STORAGE_MODES, 'native_post_meta' ),
-			'Where values are saved. Term meta needs Taxonomy rules; user meta needs User role rules.'
+			'Posts save post meta, taxonomy terms save term meta, users save user meta.'
 		),
 		tickBox( 'wpessential-fields-collapsible', 'Editors can collapse this group', false ),
 		tickBox( 'wpessential-fields-collapsed', 'Start collapsed', false ),
 		tickBox( 'wpessential-fields-revisions', 'Keep values in post revisions', false )
 	);
 
-	const locations = el( 'div', 'wpessential-fields-locations' );
-	locations.id = 'wpessential-fields-locations';
-	const addGroup = el( 'button', 'button', 'Add rule group (OR)' );
-	addGroup.type = 'button';
-	addGroup.addEventListener( 'click', () => locations.append( locationGroup( [] ) ) );
-	locations.addEventListener( 'click', ( event ) => {
-		const target = event.target;
-		if ( ! ( target instanceof HTMLButtonElement ) ) {
-			return;
-		}
-		const row = target.closest( '.wpessential-fields-location-rule' );
-		const group = target.closest( '.wpessential-fields-location-group' );
-		if ( target.dataset.wpessentialFieldsRuleAction === 'and' && row ) {
-			row.after( locationRow( {} ) );
-		}
-		if ( target.dataset.wpessentialFieldsRuleAction === 'remove' && row ) {
-			row.remove();
-			if ( group && group.children.length === 0 ) {
-				group.remove();
-			}
-		}
-	} );
-
-	panel.append(
-		presentation,
-		el( 'h4', undefined, 'Show this group when' ),
-		el(
-			'p',
-			'description',
-			'Rules in one group must all match (AND). Any matching group shows the fields (OR). No rules means the group is not placed anywhere yet.'
-		),
-		locations,
-		addGroup
-	);
+	panel.append( presentation, el( 'h4', undefined, 'Visibility' ), VISIBILITY.element );
 	if ( anchor ) {
 		anchor.before( panel );
 	} else {
 		form.prepend( panel );
 	}
 
-	document.getElementById( 'wpessential-fields-storage-mode' )?.addEventListener( 'change', syncSources );
+	document.getElementById( 'wpessential-fields-storage-mode' )?.addEventListener( 'change', () => VISIBILITY.set( value( 'wpessential-fields-storage-mode' ), [] ) );
+	VISIBILITY.set( 'native_post_meta', [] );
 
 	const collapsible = document.getElementById( 'wpessential-fields-collapsible' );
 	collapsible?.addEventListener( 'change', () => {
@@ -572,22 +186,18 @@ export function setGroupSettings( payload: JsonObject ): void {
 		storageBox.value = mode;
 	}
 	setTicked( 'wpessential-fields-revisions', payload.revision_policy === 'enabled' );
-	const host = document.getElementById( 'wpessential-fields-locations' );
-	if ( host ) {
-		renderLocations( host, payload.locations );
-	}
+	VISIBILITY.set( mode, payload.locations );
 }
 
 /** The group settings as payload keys. Throws with a message the editor shows when a value cannot work. */
 export function collectGroupSettings(): JsonObject {
-	const host = document.getElementById( 'wpessential-fields-locations' );
 	const invalid = document.querySelector( '.wpessential-fields-row-settings [aria-invalid="true"]' );
 	if ( invalid instanceof HTMLInputElement ) {
 		throw new Error( `${ invalid.dataset.wpessentialFieldsLabel ?? 'A field setting' } must be a whole number.` );
 	}
-	const locations = host ? collectLocations( host ) : [];
+	const locations = VISIBILITY.collect( value( 'wpessential-fields-storage-mode' ) || 'native_post_meta' );
 	if ( locations.length === 0 && value( 'wpessential-fields-status' ) === 'published' ) {
-		throw new Error( 'Add at least one location rule before publishing, so the fields have somewhere to appear.' );
+		throw new Error( 'Choose where to enable the group (Visibility) before publishing, so the fields have somewhere to appear.' );
 	}
 	return {
 		presentation: {

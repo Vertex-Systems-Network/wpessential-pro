@@ -55,8 +55,9 @@ test('Custom Fields: published group shows on the post editor and stores values'
     await page.locator('#wpessential-fields-show-rest').check();
     await root.getByText('Field settings').first().click();
     await page.locator('#wpessential-fields-0-rest').check();
-    await page.getByRole('button', { name: 'Add rule group (OR)' }).click();
-    await root.getByLabel('Rule value', { exact: true }).first().selectOption('post');
+    const enable = root.getByRole('combobox', { name: 'Enable for post types' });
+    await enable.fill('post');
+    await root.getByRole('option', { name: 'Posts', exact: true }).click();
     await page.getByRole('button', { name: 'Save field group' }).click();
     await expect(root.getByText(/Field Group (saved|created|updated)/i).first()).toBeVisible();
     await openAdmin(page, 'wpessential-fields');

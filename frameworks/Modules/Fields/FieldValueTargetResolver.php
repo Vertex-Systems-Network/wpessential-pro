@@ -18,7 +18,7 @@ use WPEssential\Platform\Definitions\DefinitionStatus;
 
 final class FieldValueTargetResolver {
 
-	private const SUPPORTED_LOCATION_SOURCES = [ 'post_type', 'post_status', 'entity_id' ];
+	private const SUPPORTED_LOCATION_SOURCES = [ 'post_type', 'post_status', 'entity_id', 'page_template', 'post_format', 'post_parent', 'post_term', 'current_user_role', 'current_user' ];
 
 	/** @var Closure(int):string|false */
 	private Closure $getPostType;
@@ -161,6 +161,10 @@ final class FieldValueTargetResolver {
 			throw new RuntimeException( 'Published Field Group location rule is malformed.' );
 		}
 
+		if ( ! in_array( $source, [ 'post_type', 'post_status', 'entity_id' ], true ) ) {
+			// Template, format, parent, terms and the editing user come from WordPress itself.
+			return FieldLocationMatcher::matches( [ [ $rule ] ], FieldLocationMatcher::postContext( $postId, $postType, $postStatus ) );
+		}
 		$actual = match ( $source ) {
 			'post_type' => $postType,
 			'post_status' => $postStatus,
