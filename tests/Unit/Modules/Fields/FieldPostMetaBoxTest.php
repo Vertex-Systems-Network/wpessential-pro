@@ -38,6 +38,18 @@ final class FieldPostMetaBoxTest extends TestCase
         self::assertSame(['1' => 'One', 'b' => 'Bee'], FieldPostMetaBox::choices($map));
     }
 
+    public function testContainerValuesDropBlankRows(): void
+    {
+        $sub = [['key' => 'city', 'type' => 'text'], ['key' => 'main', 'type' => 'true_false'], ['key' => 'n', 'type' => 'number']];
+        self::assertSame(
+            [['city' => 'Lahore', 'main' => true, 'n' => 2]],
+            FieldPostMetaBox::value('repeater', [['city' => ' Lahore ', 'main' => '1', 'n' => '2'], ['city' => '', 'main' => '0', 'n' => '']], ['subfields' => $sub]),
+        );
+        self::assertNull(FieldPostMetaBox::value('repeater', [['city' => '', 'main' => '0']], ['subfields' => $sub]));
+        self::assertSame(['city' => 'Karachi', 'main' => false], FieldPostMetaBox::value('group', ['city' => 'Karachi', 'main' => '0', 'evil' => 'x'], ['subfields' => $sub]));
+        self::assertNull(FieldPostMetaBox::value('group', ['city' => ''], ['subfields' => $sub]));
+    }
+
     public function testStoredDateTimeIsShownForDatetimeLocal(): void
     {
         self::assertSame('2026-11-19T10:30', FieldPostMetaBox::localDateTime('2026-11-19T10:30:00Z'));

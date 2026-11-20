@@ -39,7 +39,8 @@ final class FieldOwnerBoundaryCertificationTest extends TestCase
     {
         $compiler = new PostMetaRegistrationCompiler();
 
-        foreach (self::OWNER_BOUND_TYPES as $type) {
+        // Group and repeater are certified as one structured meta row; their writes still validate every subfield.
+        foreach (array_diff(self::OWNER_BOUND_TYPES, ['group', 'repeater']) as $type) {
             try {
                 $compiler->compile($this->field($type), 'book');
                 self::fail(sprintf('Owner-bound field type "%s" must not compile to native post meta.', $type));
