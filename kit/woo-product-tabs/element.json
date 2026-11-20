@@ -1,0 +1,57 @@
+{
+	"name": "woo-product-tabs",
+	"title": "Product Tabs (WPEssential)",
+	"category": "woocommerce",
+	"description": "Description, additional information and reviews of the current product as accessible tabs.",
+	"icon": "index-card",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"showDescription": {
+			"type": "toggle",
+			"label": "Description",
+			"default": true,
+			"panel": "content"
+		},
+		"showInfo": {
+			"type": "toggle",
+			"label": "Additional information",
+			"default": true,
+			"panel": "content"
+		},
+		"showReviews": {
+			"type": "toggle",
+			"label": "Reviews",
+			"default": true,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"tabTypography": {
+			"type": "typography",
+			"label": "Tabs",
+			"selector": ".wpe-woo-tabs__tab",
+			"panel": "style"
+		},
+		"panelTypography": {
+			"type": "typography",
+			"label": "Content",
+			"selector": ".wpe-woo-tabs__panel",
+			"panel": "style"
+		}
+	}
+}

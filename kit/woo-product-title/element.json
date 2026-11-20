@@ -1,0 +1,58 @@
+{
+	"name": "woo-product-title",
+	"title": "Product Title (WPEssential)",
+	"category": "woocommerce",
+	"description": "The current product name as a heading, optionally linked.",
+	"icon": "heading",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"tag": {
+			"type": "select",
+			"label": "HTML tag",
+			"default": "h1",
+			"options": {
+				"h1": "H1",
+				"h2": "H2",
+				"h3": "H3",
+				"p": "Paragraph"
+			},
+			"panel": "content"
+		},
+		"link": {
+			"type": "toggle",
+			"label": "Link to the product",
+			"default": false,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"titleTypography": {
+			"type": "typography",
+			"label": "Title",
+			"selector": ".wpe-woo-title",
+			"panel": "style"
+		},
+		"titleColor": {
+			"type": "colors",
+			"label": "Title",
+			"prop": "color",
+			"selector": ".wpe-woo-title",
+			"panel": "style"
+		}
+	}
+}

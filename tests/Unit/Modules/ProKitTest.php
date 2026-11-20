@@ -23,7 +23,7 @@ final class ProKitTest extends TestCase
     public function testEveryProElementHasItsFilesAndWidget(): void
     {
         $dirs = glob( self::ROOT . '/kit/*/element.json' ) ?: [];
-        self::assertCount( 17, $dirs );
+        self::assertCount( 32, $dirs );
         foreach ( $dirs as $file ) {
             $name = basename( dirname( $file ) );
             $def  = json_decode( (string) file_get_contents( $file ), true );

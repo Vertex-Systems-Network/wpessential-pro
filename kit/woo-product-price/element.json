@@ -1,0 +1,52 @@
+{
+	"name": "woo-product-price",
+	"title": "Product Price (WPEssential)",
+	"category": "woocommerce",
+	"description": "Price of the current product, with sale price and range for variable products.",
+	"icon": "money-alt",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"showSaleBadge": {
+			"type": "toggle",
+			"label": "Show sale badge",
+			"default": true,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"priceTypography": {
+			"type": "typography",
+			"label": "Price",
+			"selector": ".wpe-woo-price",
+			"panel": "style"
+		},
+		"priceColor": {
+			"type": "colors",
+			"label": "Price",
+			"prop": "color",
+			"selector": ".wpe-woo-price",
+			"panel": "style"
+		},
+		"oldTypography": {
+			"type": "typography",
+			"label": "Regular price (on sale)",
+			"selector": ".wpe-woo-price del",
+			"panel": "style"
+		}
+	}
+}

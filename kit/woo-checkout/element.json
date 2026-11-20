@@ -1,0 +1,32 @@
+{
+	"name": "woo-checkout",
+	"title": "Checkout (WPEssential)",
+	"category": "woocommerce",
+	"description": "Checkout: billing, shipping, payment and order review; also the order-received screen.",
+	"icon": "cart",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {},
+	"groups": {
+		"textTypography": {
+			"type": "typography",
+			"label": "Text",
+			"selector": ".wpe-woo-page",
+			"panel": "style"
+		},
+		"buttonBackground": {
+			"type": "background",
+			"label": "Buttons",
+			"selector": ".wpe-woo-page .button",
+			"panel": "style"
+		}
+	}
+}

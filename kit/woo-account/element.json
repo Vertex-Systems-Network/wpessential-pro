@@ -1,0 +1,32 @@
+{
+	"name": "woo-account",
+	"title": "My Account (WPEssential)",
+	"category": "woocommerce",
+	"description": "Customer account: login/register, dashboard, orders, downloads, addresses and details.",
+	"icon": "cart",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {},
+	"groups": {
+		"textTypography": {
+			"type": "typography",
+			"label": "Text",
+			"selector": ".wpe-woo-page",
+			"panel": "style"
+		},
+		"buttonBackground": {
+			"type": "background",
+			"label": "Buttons",
+			"selector": ".wpe-woo-page .button",
+			"panel": "style"
+		}
+	}
+}

@@ -1,0 +1,56 @@
+{
+	"name": "woo-product-gallery",
+	"title": "Product Gallery (WPEssential)",
+	"category": "woocommerce",
+	"description": "Main product image with thumbnails; switches images on click and keyboard, opens full size.",
+	"icon": "format-gallery",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"thumbs": {
+			"type": "select",
+			"label": "Thumbnails",
+			"default": "below",
+			"options": {
+				"below": "Below",
+				"side": "Side",
+				"none": "None"
+			},
+			"panel": "content"
+		},
+		"ratio": {
+			"type": "select",
+			"label": "Image ratio",
+			"default": "1/1",
+			"options": {
+				"1/1": "Square",
+				"4/5": "Portrait",
+				"4/3": "Landscape"
+			},
+			"css": "--wpek-woo-ratio",
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"imageBorder": {
+			"type": "border",
+			"label": "Image border",
+			"selector": ".wpe-woo-gallery__main img",
+			"panel": "style"
+		}
+	}
+}

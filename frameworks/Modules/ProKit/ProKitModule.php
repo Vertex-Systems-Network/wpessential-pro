@@ -32,9 +32,22 @@ final class ProKitModule implements ModuleInterface {
 			return;
 		}
 		add_filter( 'wpessential_kit_roots', [ self::class, 'roots' ] );
+		// Mini Cart: live item count after AJAX add / remove.
+		add_filter( 'woocommerce_add_to_cart_fragments', [ self::class, 'cartFragments' ] );
 	}
 
 	public function boot( ServiceRegistryInterface $services ): void {}
+
+	/**
+	 * @param mixed $fragments WooCommerce cart fragments.
+	 * @return array<string,mixed>
+	 */
+	public static function cartFragments( mixed $fragments ): array {
+		$fragments = is_array( $fragments ) ? $fragments : [];
+		$fragments['wpe-mini-cart-count'] = function_exists( 'WC' ) && WC()->cart ? (string) WC()->cart->get_cart_contents_count() : '0';
+
+		return $fragments;
+	}
 
 	/**
 	 * @param mixed $roots Kit folders added so far.

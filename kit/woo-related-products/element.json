@@ -1,0 +1,102 @@
+{
+	"name": "woo-related-products",
+	"title": "Related Products (WPEssential)",
+	"category": "woocommerce",
+	"description": "Related products, up-sells or cross-sells of the current product (or cart) as a card grid.",
+	"icon": "screenoptions",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"source": {
+			"type": "select",
+			"label": "Products",
+			"default": "related",
+			"options": {
+				"related": "Related",
+				"upsells": "Up-sells",
+				"crosssells": "Cart cross-sells"
+			},
+			"panel": "content"
+		},
+		"heading": {
+			"type": "text",
+			"label": "Heading",
+			"default": "You may also like",
+			"panel": "content"
+		},
+		"count": {
+			"type": "range",
+			"label": "Maximum products",
+			"default": 4,
+			"min": 1,
+			"max": 12,
+			"step": 1,
+			"unit": "",
+			"panel": "content"
+		},
+		"columns": {
+			"type": "range",
+			"label": "Columns",
+			"default": "",
+			"min": 1,
+			"max": 6,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-woo-cols",
+			"panel": "content"
+		},
+		"showImage": {
+			"type": "toggle",
+			"label": "Image",
+			"default": true,
+			"panel": "content"
+		},
+		"showRating": {
+			"type": "toggle",
+			"label": "Rating",
+			"default": true,
+			"panel": "content"
+		},
+		"showPrice": {
+			"type": "toggle",
+			"label": "Price",
+			"default": true,
+			"panel": "content"
+		},
+		"showButton": {
+			"type": "toggle",
+			"label": "Add to cart",
+			"default": true,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"titleTypography": {
+			"type": "typography",
+			"label": "Product name",
+			"selector": ".wpe-woo-card__title",
+			"panel": "style"
+		},
+		"cardBackground": {
+			"type": "background",
+			"label": "Card background",
+			"selector": ".wpe-woo-card",
+			"panel": "style"
+		}
+	}
+}

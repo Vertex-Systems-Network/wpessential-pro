@@ -1,0 +1,103 @@
+{
+	"name": "woo-product-archive",
+	"title": "Product Archive (WPEssential)",
+	"category": "woocommerce",
+	"description": "Product loop of the current shop, category, tag or search page with result count, sorting and pagination.",
+	"icon": "grid-view",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"perPage": {
+			"type": "range",
+			"label": "Products per page (outside shop pages)",
+			"default": 12,
+			"min": 1,
+			"max": 48,
+			"step": 1,
+			"unit": "",
+			"panel": "content"
+		},
+		"columns": {
+			"type": "range",
+			"label": "Columns",
+			"default": "",
+			"min": 1,
+			"max": 6,
+			"step": 1,
+			"unit": "",
+			"responsive": true,
+			"css": "--wpek-woo-cols",
+			"panel": "content"
+		},
+		"showCount": {
+			"type": "toggle",
+			"label": "Result count",
+			"default": true,
+			"panel": "content"
+		},
+		"showOrdering": {
+			"type": "toggle",
+			"label": "Sorting",
+			"default": true,
+			"panel": "content"
+		},
+		"showPagination": {
+			"type": "toggle",
+			"label": "Pagination",
+			"default": true,
+			"panel": "content"
+		},
+		"showImage": {
+			"type": "toggle",
+			"label": "Image",
+			"default": true,
+			"panel": "content"
+		},
+		"showRating": {
+			"type": "toggle",
+			"label": "Rating",
+			"default": true,
+			"panel": "content"
+		},
+		"showPrice": {
+			"type": "toggle",
+			"label": "Price",
+			"default": true,
+			"panel": "content"
+		},
+		"showButton": {
+			"type": "toggle",
+			"label": "Add to cart",
+			"default": true,
+			"panel": "content"
+		},
+		"emptyMessage": {
+			"type": "text",
+			"label": "No products message",
+			"default": "No products found.",
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"titleTypography": {
+			"type": "typography",
+			"label": "Product name",
+			"selector": ".wpe-woo-card__title",
+			"panel": "style"
+		},
+		"cardBackground": {
+			"type": "background",
+			"label": "Card background",
+			"selector": ".wpe-woo-card",
+			"panel": "style"
+		}
+	}
+}

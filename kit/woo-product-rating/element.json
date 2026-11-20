@@ -1,0 +1,46 @@
+{
+	"name": "woo-product-rating",
+	"title": "Product Rating (WPEssential)",
+	"category": "woocommerce",
+	"description": "Star rating and review count of the current product.",
+	"icon": "star-filled",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"showCount": {
+			"type": "toggle",
+			"label": "Show review count",
+			"default": true,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"starColor": {
+			"type": "colors",
+			"label": "Stars",
+			"prop": "color",
+			"selector": ".wpe-woo-rating .star-rating",
+			"panel": "style"
+		},
+		"countTypography": {
+			"type": "typography",
+			"label": "Count",
+			"selector": ".wpe-woo-rating__count",
+			"panel": "style"
+		}
+	}
+}

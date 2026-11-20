@@ -1,0 +1,51 @@
+{
+	"name": "woo-add-to-cart",
+	"title": "Add to Cart (WPEssential)",
+	"category": "woocommerce",
+	"description": "Quantity, variations and the add-to-cart button for the current product (simple, variable, grouped, external).",
+	"icon": "cart",
+	"keywords": [
+		"woocommerce",
+		"shop",
+		"product",
+		"store"
+	],
+	"panels": {
+		"content": "Content",
+		"style": "Style"
+	},
+	"attributes": {
+		"previewProduct": {
+			"type": "text",
+			"label": "Preview product ID (editor only; the page uses the current product)",
+			"default": "",
+			"panel": "content"
+		},
+		"showQuantity": {
+			"type": "toggle",
+			"label": "Show quantity field",
+			"default": true,
+			"panel": "content"
+		},
+		"fullWidth": {
+			"type": "toggle",
+			"label": "Full-width button",
+			"default": false,
+			"panel": "content"
+		}
+	},
+	"groups": {
+		"buttonBackground": {
+			"type": "background",
+			"label": "Button background",
+			"selector": ".single_add_to_cart_button",
+			"panel": "style"
+		},
+		"buttonTypography": {
+			"type": "typography",
+			"label": "Button",
+			"selector": ".single_add_to_cart_button",
+			"panel": "style"
+		}
+	}
+}
