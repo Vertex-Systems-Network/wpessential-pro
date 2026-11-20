@@ -685,8 +685,13 @@ export function fieldSettingsPanel( field: JsonObject, index: number ): HTMLDeta
 		grid.append( labelled( 'Date precision', precision ) );
 	}
 
+	// Group and repeater manage their own rows; the normalizer rejects common cloning on them.
+	if ( type === 'group' || type === 'repeater' ) {
+		return box;
+	}
+
 	// Cloning: the normalizer reads these top-level keys and folds them into `repeatability`.
-	const clone = ( key: string, fallback: unknown ): unknown => ( key in field ? field[ key ] : fallback );
+	const clone =( key: string, fallback: unknown ): unknown => ( key in field ? field[ key ] : fallback );
 	const cloning = clone( 'cloneable', repeat.enabled ) === true;
 	// Reordering needs cloning, so the sortable box follows the cloneable box.
 	const syncSortable = ( on: boolean ): void => {
