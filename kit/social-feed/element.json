@@ -192,6 +192,22 @@
 				"minimal": "Minimal"
 			},
 			"panel": "layout"
+		},
+		"swipe": {
+			"type": "select",
+			"panel": "layout",
+			"label": "Swipe layout",
+			"default": "",
+			"options": {
+				"": "Inherit",
+				"off": "Grid",
+				"carousel": "Carousel",
+				"slider": "Slider (one per view)",
+				"cards": "Swipe cards",
+				"stack": "Card stack"
+			},
+			"responsive": true,
+			"css": "--wpek-sw"
 		}
 	},
 	"groups": {
