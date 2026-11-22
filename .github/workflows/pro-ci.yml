@@ -7,9 +7,6 @@ name: Pro CI
 
 on:
   pull_request:
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
   push:
     branches:
       - main
