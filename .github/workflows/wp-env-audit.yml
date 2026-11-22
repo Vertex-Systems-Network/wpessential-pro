@@ -5,6 +5,20 @@ name: WordPress E2E Audit (Free + Pro)
 # the 30-day trial a local site gets. Specs: Free tests/e2e/specs/wp-env + Pro tests/e2e/specs.
 on:
   pull_request:
+    paths:
+      - 'frameworks/**'
+      - 'kit/**'
+      - 'tools/admin/**'
+      - 'admin-ui/**'
+      - 'assets/**'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tests/e2e/**'
+      - '.wp-env.json'
+      - 'wpessential-pro.php'
+      - '.github/workflows/wp-env-audit.yml'
   workflow_dispatch:
     inputs:
       free_ref:
