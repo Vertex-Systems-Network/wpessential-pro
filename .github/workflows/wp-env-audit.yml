@@ -8,6 +8,7 @@ on:
     paths:
       - 'frameworks/**'
       - 'kit/**'
+      - 'tools/admin/**'
       - 'admin-ui/**'
       - 'assets/**'
       - 'composer.json'

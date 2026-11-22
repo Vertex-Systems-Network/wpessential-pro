@@ -9,6 +9,9 @@ on:
     paths:
       - 'frameworks/**'
       - 'kit/**'
+      - 'tools/admin/**'
+      - 'package.json'
+      - 'package-lock.json'
       - 'wpessential-pro.php'
       - 'composer.json'
       - 'composer.lock'
