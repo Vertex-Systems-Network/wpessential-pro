@@ -6,6 +6,15 @@ name: Free + Pro Lifecycle
 
 on:
   pull_request:
+    paths:
+      - 'frameworks/**'
+      - 'kit/**'
+      - 'wpessential-pro.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'tests/**'
+      - 'tools/release/**'
+      - '.github/workflows/free-pro-lifecycle.yml'
   push:
     branches:
       - main
