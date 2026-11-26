@@ -45,9 +45,9 @@ expect() {
 	pass "${label} (${got})"
 }
 
-# Tries a real Pro write: the Site Kit "update" ability sets a colour field.
+# Site Tools Kit (Free since ADR-0239) sets a colour field: licence state must never block it.
 # Prints "written:<stored value>" or "denied:<reason>".
-pro_write() {
+kit_write() {
 	export WPE_VALUE="$1"
 	wp eval --user=admin '
 		$value = (string) getenv("WPE_VALUE");
@@ -66,13 +66,23 @@ pro_write() {
 	'
 }
 
-# Pro data as stored: the Site Kit option.
-pro_data() { wp eval '$v = get_option("wpessential_site_kit", []); echo is_array($v["values"] ?? null) ? implode(",", array_map("strval", $v["values"])) : "none";'; }
+# Asks the premium gate about a Pro mutating ability. Prints "gate:open" or "denied:premium_read_only".
+pro_write() {
+	wp eval --user=admin '
+		$abilities = WPEssential\Bootstrap\Plugin::kernel()->services()->get("platform.abilities");
+		$context = new WPEssential\Platform\Auth\ExecutionContext(new WPEssential\Platform\Auth\Principal(get_current_user_id()), get_current_blog_id());
+		$decision = $abilities->authorize("wpessential/relations/save-definition", $context, []);
+		echo match ($decision->reason) { "premium_read_only" => "denied:premium_read_only", "ability_not_registered" => "missing:relations", default => "gate:open" };
+	'
+}
+
+# Site Tools Kit data as stored.
+kit_data() { wp eval '$v = get_option("wpessential_site_kit", []); echo is_array($v["values"] ?? null) ? implode(",", array_map("strval", $v["values"])) : "none";'; }
 
 # Fires admin_init with a Pro admin form action. Prints "blocked" or "allowed".
 pro_admin_post() {
 	wp eval '
-		$_REQUEST["action"] = "wpessential_site_kit_save";
+		$_REQUEST["action"] = "wpessential_relations_save";
 		add_filter("wp_die_handler", static fn () => static function (): void { echo "blocked"; exit(0); });
 		do_action("admin_init");
 		echo "allowed";
@@ -135,8 +145,10 @@ expect "Free+Pro, no licence" "compatible\|verification_unavailable\|true\|false
 # 3. Licence states written by Free's LicenseService.
 set_license "{\"key\":\"WPE-LIFECYCLE-0001\",\"status\":\"active\",\"pro\":true,\"plan\":\"Pro\",\"expires\":\"${future}\",\"checked\":${now},\"verified\":${now}}"
 expect "Active Pro licence" "compatible\|pro_active\|true\|true\|[1-9][0-9]*\|[1-9][0-9]*"
-[[ "$(pro_write '#123456')" == "written:#123456" ]] || fail "Pro write refused with an active licence: $(pro_write '#123456')"
-pass "Active licence: Pro write saved"
+[[ "$(pro_write)" == "gate:open" ]] || fail "Pro write refused with an active licence: $(pro_write)"
+pass "Active licence: Pro write allowed"
+[[ "$(kit_write '#123456')" == "written:#123456" ]] || fail "Site Tools Kit write refused: $(kit_write '#123456')"
+pass "Site Tools Kit write saved"
 [[ "$(pro_admin_post)" == "allowed" ]] || fail "Pro admin form blocked with an active licence"
 pass "Active licence: Pro admin form allowed"
 set_license "{\"key\":\"WPE-LIFECYCLE-0001\",\"status\":\"active\",\"pro\":true,\"plan\":\"Pro Trial\",\"expires\":\"${future}\",\"checked\":${now},\"verified\":${now}}"
@@ -145,11 +157,11 @@ set_license "{\"key\":\"WPE-LIFECYCLE-0001\",\"status\":\"active\",\"pro\":true,
 expect "Grace period" "compatible\|grace\|true\|true\|[1-9][0-9]*\|[1-9][0-9]*"
 set_license "{\"key\":\"WPE-LIFECYCLE-0001\",\"status\":\"invalid\",\"error\":\"wpe_license_expired\",\"pro\":true,\"plan\":\"Pro\",\"expires\":\"${past}\",\"checked\":${now}}"
 expect "Expired licence is read-only" "compatible\|expired\|true\|false\|[1-9][0-9]*\|[1-9][0-9]*"
-got="$(pro_write '#654321')"
+got="$(pro_write)"
 [[ "${got}" == "denied:premium_read_only" ]] || fail "Expired licence: Pro write not blocked (${got})"
 pass "Expired licence: Pro write blocked (${got})"
-[[ "$(pro_data)" == *"#123456"* ]] || fail "Expired licence: Pro data changed or unreadable ($(pro_data))"
-pass "Expired licence: Pro data kept and readable"
+[[ "$(kit_write '#654321')" == "written:#654321" ]] || fail "Expired licence blocked the Free Site Tools Kit ($(kit_write '#654321'))"
+pass "Expired licence: Free Site Tools Kit still writable"
 [[ "$(pro_admin_post)" == "blocked" ]] || fail "Expired licence: Pro admin form not blocked"
 pass "Expired licence: Pro admin form blocked"
 check_log "Licence states"
@@ -185,11 +197,11 @@ wp plugin delete wpessential-pro
 rows_after="$(row_counts)"
 [[ -n "${rows_before}" && "${rows_before}" == "${rows_after}" ]] || fail "Data changed after deleting Pro: '${rows_before}' -> '${rows_after}'"
 pass "Table rows kept after deleting Pro (${rows_after})"
-[[ "$(pro_data)" == *"#123456"* ]] || fail "Pro data lost after deleting Pro ($(pro_data))"
-pass "Pro data kept after deleting Pro"
+[[ "$(kit_data)" == *"#654321"* ]] || fail "Site Tools Kit data lost after deleting Pro ($(kit_data))"
+pass "Site Tools Kit data kept after deleting Pro"
 wp plugin install "${PRO_ZIP}" --activate >/dev/null
 expect "Pro reinstalled" "compatible\|pro_active\|true\|true\|[1-9][0-9]*\|[1-9][0-9]*"
-[[ "$(pro_write '#abcdef')" == "written:#abcdef" ]] || fail "Pro write refused after reinstall"
+[[ "$(pro_write)" == "gate:open" ]] || fail "Pro write refused after reinstall"
 pass "Pro reinstalled: writes work again"
 check_log "Full lifecycle"
 

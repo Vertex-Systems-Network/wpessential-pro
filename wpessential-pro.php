@@ -129,7 +129,6 @@ $moduleClasses = [
     \WPEssential\Modules\Notifications\NotificationsModule::class,
     \WPEssential\Modules\Emails\EmailsModule::class,
     \WPEssential\Modules\Chat\ChatModule::class,
-    \WPEssential\Modules\SiteKit\SiteKitModule::class,
     \WPEssential\Modules\ProKit\ProKitModule::class,
 ];
 
@@ -309,8 +308,6 @@ add_action(
                 static function (): void {
                     $action = isset($_REQUEST['action']) ? sanitize_key(wp_unslash((string) $_REQUEST['action'])) : '';
                     $proWriteActions = [
-                        'wpessential_site_kit_save',
-                        'wpessential_site_kit_snippets',
                         'wpessential_relations_save',
                         'wpessential_relations_status',
                         'wpessential_relations_edge',

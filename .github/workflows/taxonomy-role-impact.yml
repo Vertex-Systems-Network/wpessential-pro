@@ -178,6 +178,7 @@ jobs:
           cp -a "${WPE_FREE_ROOT}/frameworks/functions.php" "${free_root}/frameworks/functions.php"
           cp -a "${WPE_FREE_ROOT}/frameworks/Modules/CustomPostTypes" "${free_root}/frameworks/Modules/CustomPostTypes"
           cp -a "${WPE_FREE_ROOT}/frameworks/Modules/Taxonomies" "${free_root}/frameworks/Modules/Taxonomies"
+          cp -a "${WPE_FREE_ROOT}/frameworks/Modules/SiteKit" "${free_root}/frameworks/Modules/SiteKit"
           composer install --working-dir="${WPE_FREE_ROOT}" --no-dev --no-interaction --prefer-dist --no-progress
           cp -a "${WPE_FREE_ROOT}/vendor" "${free_root}/vendor"
           cp -a "${WPE_FREE_ROOT}/wpessential.php" "${free_root}/wpessential.php"
@@ -187,7 +188,7 @@ jobs:
           for module_dir in "${GITHUB_WORKSPACE}"/frameworks/Modules/*; do
             module_name="$(basename "${module_dir}")"
             case "${module_name}" in
-              CustomPostTypes|Taxonomies) continue ;;
+              CustomPostTypes|Taxonomies|SiteKit) continue ;;
             esac
             cp -a "${module_dir}" "${pro_root}/frameworks/Modules/${module_name}"
           done
