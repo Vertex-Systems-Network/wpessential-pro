@@ -38,6 +38,21 @@ final class EntitlementProBootstrapSourceTest extends TestCase
         self::assertStringContainsString('$GLOBALS[\'wpe_pro_compatibility_result\'] = $result', $source);
     }
 
+    public function testSiteToolsKitSyncIsGatedByPremiumMutationPolicy(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 3) . '/wpessential-pro.php');
+        self::assertIsString($source);
+        $hook = strpos($source, "'wpessential_site_kit_elementor_sync_enabled'");
+        $policy = strpos($source, '$operations = new');
+        self::assertIsInt($hook);
+        self::assertIsInt($policy);
+        self::assertLessThan($hook, $policy);
+        self::assertStringContainsString(
+            'static fn (): bool => $operations->allowsMutation(),',
+            substr($source, $hook, 200)
+        );
+    }
+
     public function testBootstrapContainsNoRemoteLicenseOrBillingTransport(): void
     {
         $source = file_get_contents(dirname(__DIR__, 3) . '/wpessential-pro.php');
