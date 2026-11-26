@@ -267,8 +267,6 @@ function validateProStage(string $stageRoot, array $proAssets): void
         'frameworks/Modules/Notifications/NotificationsModule.php',
         'frameworks/Modules/Emails/EmailsModule.php',
         'frameworks/Modules/Chat/ChatModule.php',
-        'frameworks/Modules/SiteKit/SiteKitModule.php',
-        'frameworks/Modules/SiteKit/data/google-fonts.json',
         'frameworks/Modules/ProKit/ProKitModule.php',
         'kit/countdown/element.json',
         ...$proAssets,
