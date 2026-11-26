@@ -136,7 +136,7 @@ jobs:
             echo 'Pro archive duplicates Free Platform/Kernel source' >&2
             exit 1
           fi
-          if grep -E '^wpessential-pro/frameworks/Modules/(CustomPostTypes|Taxonomies)/' artifacts/wpessential-pro-files.txt; then
+          if grep -E '^wpessential-pro/frameworks/Modules/(CustomPostTypes|Taxonomies|SiteKit)/' artifacts/wpessential-pro-files.txt; then
             echo 'Pro archive duplicates permanently Free module source' >&2
             exit 1
           fi
