@@ -46,7 +46,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           repository: Vertex-Systems-Network/wpessential
-          ref: ${{ inputs.free_ref || vars.WPE_FREE_REF || 'main' }}
+          ref: ${{ inputs.free_ref || '60a796231e3b112a4fafc61627a279bd47908337' }}
           path: .wpessential-free
           token: ${{ secrets.WPE_FREE_REPO_TOKEN || github.token }}
           persist-credentials: false
