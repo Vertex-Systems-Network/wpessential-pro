@@ -47,6 +47,7 @@ final class EntitlementProBootstrapSourceTest extends TestCase
         self::assertIsInt($hook);
         self::assertIsInt($policy);
         self::assertLessThan($hook, $policy);
+        self::assertStringContainsString("if (function_exists('add_filter'))", substr($source, $hook - 100, 100));
         self::assertStringContainsString(
             'static fn (): bool => $operations->allowsMutation(),',
             substr($source, $hook, 200)

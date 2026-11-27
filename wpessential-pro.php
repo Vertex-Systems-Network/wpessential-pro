@@ -287,10 +287,12 @@ add_action(
 
         // ADR-0239: Free owns the registry; premium Elementor synchronization is opt-in.
         // Older Free versions ignore this filter. Do not contribute it for read-only licences.
-        add_filter(
-            'wpessential_site_kit_elementor_sync_enabled',
-            static fn (): bool => $operations->allowsMutation(),
-        );
+        if (function_exists('add_filter')) {
+            add_filter(
+                'wpessential_site_kit_elementor_sync_enabled',
+                static fn (): bool => $operations->allowsMutation(),
+            );
+        }
 
         // Read-only enforcement: once Free has booted (plugins_loaded -100), deny mutating
         // pro abilities while the entitlement does not allow changes.
